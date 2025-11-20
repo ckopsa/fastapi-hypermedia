@@ -124,7 +124,9 @@ class TransitionManager:
         for route in request.app.routes:
             if isinstance(route, APIRoute):
                 op_id = route.operation_id
-                if not op_id and hasattr(request.app.router, "generate_unique_id_function"):
+                if not op_id and hasattr(
+                    request.app.router, "generate_unique_id_function"
+                ):
                     # FastAPI stores generate_unique_id_function in the router
                     op_id = request.app.router.generate_unique_id_function(route)
 
@@ -285,7 +287,9 @@ class TransitionManager:
                                     )
                             else:
                                 pass
-                request.app.state.hypermedia_routes_info[operation.get("operationId")] = Form(
+                request.app.state.hypermedia_routes_info[
+                    operation.get("operationId")
+                ] = Form(
                     id=operation.get("operationId"),
                     name=operation.get("operationId"),
                     href=path,

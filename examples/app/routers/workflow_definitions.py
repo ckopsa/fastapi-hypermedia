@@ -216,9 +216,7 @@ async def create_workflow_definition(
         return current_user
 
     assert current_user is not None
-    definitions = await service.list_workflow_definitions(
-        definition_id=definition_id
-    )
+    definitions = await service.list_workflow_definitions(definition_id=definition_id)
     if not definitions:
         return HTMLResponse(status_code=404, content="Workflow Definition not found")
 
@@ -228,15 +226,12 @@ async def create_workflow_definition(
         definition_id=definition.id,
         name=definition.name,
         description=definition.description,
-        task_definitions=definition.task_definitions
-        + [workflow_definition_task],
+        task_definitions=definition.task_definitions + [workflow_definition_task],
     )
 
     return RedirectResponse(
         url=str(
-            request.url_for(
-                "view_workflow_definition", definition_id=definition.id
-            )
+            request.url_for("view_workflow_definition", definition_id=definition.id)
         ),
         status_code=303,
     )

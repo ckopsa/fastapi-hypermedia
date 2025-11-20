@@ -39,21 +39,23 @@ def test_improved_dx_usage(test_app, test_client):
 
 def test_queries_and_templates_dx(test_app, test_client):
     @test_app.get("/search", name="search_items", tags=["search"])
-    async def search_items(q: str, request: Request, hm: Hypermedia = Depends(Hypermedia)):
+    async def search_items(
+        q: str, request: Request, hm: Hypermedia = Depends(Hypermedia)
+    ):
         return hm.create_collection_response(
-            title="Search Results",
-            queries=[("search_items", "search")]
+            title="Search Results", queries=[("search_items", "search")]
         )
 
     @test_app.post("/items", name="create_item", tags=["items"])
-    async def create_item(item: dict, request: Request, hm: Hypermedia = Depends(Hypermedia)):
+    async def create_item(
+        item: dict, request: Request, hm: Hypermedia = Depends(Hypermedia)
+    ):
         return {}
 
     @test_app.get("/root", name="root")
     async def root(request: Request, hm: Hypermedia = Depends(Hypermedia)):
         return hm.create_collection_response(
-            title="Root",
-            templates=[("create_item", "create")]
+            title="Root", templates=[("create_item", "create")]
         )
 
     # Test Query
@@ -79,7 +81,7 @@ def test_string_references(test_app, test_client):
             title="Simple",
             links=["simple_link"],
             queries=["simple_link"],
-            templates=["simple_link"]
+            templates=["simple_link"],
         )
 
     response = test_client.get("/simple")
@@ -113,7 +115,7 @@ def test_parameterized_links_and_functions(test_app, test_client):
                 ("read_item", {"item_id": 1}),
                 (read_item, {"item_id": 2}),
                 (read_post, "my_post", {"user_id": 10, "post_id": 20}),
-            ]
+            ],
         )
 
     response = test_client.get("/")
@@ -122,7 +124,7 @@ def test_parameterized_links_and_functions(test_app, test_client):
     links = data["collection"]["links"]
 
     def find_link(href_part):
-        return next((l for l in links if href_part in l["href"]), None)
+        return next((link for link in links if href_part in link["href"]), None)
 
     # 2. ("read_item", {"item_id": 1}) -> href: .../items/1
     link_item_1 = find_link("/items/1")
@@ -147,7 +149,7 @@ def test_missing_params_error(test_app, test_client):
     def fail_endpoint(hm: Hypermedia = Depends(Hypermedia)):
         return hm.create_collection_response(
             title="Fail",
-            links=[read_item]  # Missing item_id
+            links=[read_item],  # Missing item_id
         )
 
     with pytest.raises(KeyError) as excinfo:

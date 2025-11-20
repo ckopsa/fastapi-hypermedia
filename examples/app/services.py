@@ -119,10 +119,10 @@ class WorkflowService:
         updated_task = await self.task_repo.update_task_instance(task_id, task)
 
         if updated_task:
-            workflow_details: models.WorkflowInstance | None = (
-                await self.get_workflow_instance_with_tasks(
-                    task.workflow_instance_id, user_id
-                )
+            workflow_details: (
+                models.WorkflowInstance | None
+            ) = await self.get_workflow_instance_with_tasks(
+                task.workflow_instance_id, user_id
             )
             if workflow_details:
                 all_tasks_completed = all(

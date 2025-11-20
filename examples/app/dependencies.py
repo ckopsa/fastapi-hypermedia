@@ -1,17 +1,19 @@
-from core.html_renderer import HtmlRendererInterface, Jinja2HtmlRenderer
-from core.representor import Representor
-from database import get_db
 from fastapi import Depends, Request
-from repository import (
+from sqlalchemy.orm import Session
+
+from fastapi_hypermedia.templating import get_templates
+from fastapi_hypermedia.transitions import TransitionManager
+
+from .core.html_renderer import HtmlRendererInterface, Jinja2HtmlRenderer
+from .core.representor import Representor
+from .database import get_db
+from .repository import (
     PostgreSQLWorkflowRepository,
     TaskInstanceRepository,
     WorkflowDefinitionRepository,
     WorkflowInstanceRepository,
 )
-from services import WorkflowService
-
-from fastapi_hypermedia.templating import get_templates
-from fastapi_hypermedia.transitions import TransitionManager
+from .services import WorkflowService
 
 
 def get_html_renderer() -> HtmlRendererInterface:
@@ -19,7 +21,7 @@ def get_html_renderer() -> HtmlRendererInterface:
 
 
 def get_workflow_repository(
-    db=Depends(get_db),
+    db: Session = Depends(get_db),
 ) -> tuple[
     WorkflowDefinitionRepository, WorkflowInstanceRepository, TaskInstanceRepository
 ]:

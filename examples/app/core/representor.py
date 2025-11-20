@@ -1,22 +1,24 @@
 from fastapi import Request
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, Response
 
 from fastapi_hypermedia import cj_models
+
+from .html_renderer import HtmlRendererInterface
 
 
 class Representor:
     def __init__(
         self,
         request: Request,
-        html_renderer,
-    ):
+        html_renderer: HtmlRendererInterface,
+    ) -> None:
         self.request = request
         self.html_renderer = html_renderer
 
-    async def represent(self, collection_json: cj_models.CollectionJson):
+    async def represent(self, collection_json: cj_models.CollectionJson) -> Response:
         accept_preferences = self.request.headers.get("Accept", "")
-        accept_preferences = accept_preferences.split(",")
-        for item in accept_preferences:
+        accept_list = accept_preferences.split(",")
+        for item in accept_list:
             match item.strip():
                 case "application/vnd.collection+json":
                     return JSONResponse(

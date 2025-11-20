@@ -1,11 +1,10 @@
 import uuid
 from datetime import datetime  # Added for default value
 
-from sqlalchemy import Column, DateTime, ForeignKey, String, Text
-from sqlalchemy import Enum as SQLAlchemyEnum
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, String, Text
 
 # Remove JSONB from imports if it's no longer used
-from sqlalchemy.orm import relationship
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 
@@ -50,8 +49,8 @@ class WorkflowInstance(Base):
     )
     name = Column(String, nullable=False)
     user_id = Column(String, index=True, nullable=False)
-    status = Column(
-        SQLAlchemyEnum(WorkflowStatus), nullable=False, default=WorkflowStatus.active
+    status: Mapped[WorkflowStatus] = mapped_column(
+        Enum(WorkflowStatus), nullable=False, default=WorkflowStatus.active
     )
     created_at = Column(DateTime, nullable=False, default=datetime.utcnow)
     share_token = Column(String, unique=True, index=True, nullable=True)

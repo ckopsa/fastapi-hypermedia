@@ -2,21 +2,24 @@ import os
 from urllib.parse import quote_plus
 
 import requests
-from config import (
+from fastapi import APIRouter, HTTPException, Request, status
+from fastapi.responses import RedirectResponse
+
+from ..config import (
     KEYCLOAK_API_CLIENT_ID,
     KEYCLOAK_API_CLIENT_SECRET,
     KEYCLOAK_REALM,
     KEYCLOAK_REDIRECT_URI,
     KEYCLOAK_SERVER_URL,
 )
-from fastapi import APIRouter, HTTPException, Request, status
-from fastapi.responses import RedirectResponse
 
 router = APIRouter(tags=["auth"])
 
 
 @router.get("/login", response_class=RedirectResponse)
-async def redirect_to_keycloak_login(request: Request, redirect: str = None):
+async def redirect_to_keycloak_login(
+    request: Request, redirect: str | None = None
+) -> RedirectResponse:
     """Redirect to Keycloak login page, storing the original URL for post-login redirect."""
     original_url = redirect if redirect else str(request.headers.get("referer", "/"))
     encoded_original_url = quote_plus(original_url)
@@ -29,7 +32,9 @@ async def redirect_to_keycloak_login(request: Request, redirect: str = None):
 
 
 @router.get("/callback", response_class=RedirectResponse)
-async def handle_keycloak_callback(code: str, state: str = None):
+async def handle_keycloak_callback(
+    code: str, state: str | None = None
+) -> RedirectResponse:
     """Handle the callback from Keycloak with the authorization code."""
     token_url = (
         f"{KEYCLOAK_SERVER_URL}realms/{KEYCLOAK_REALM}/protocol/openid-connect/token"
@@ -77,7 +82,7 @@ async def handle_keycloak_callback(code: str, state: str = None):
 
 
 @router.post("/token")
-async def token_placeholder():
+async def token_placeholder() -> None:
     """Placeholder for token endpoint - actual authentication handled by Keycloak."""
     raise HTTPException(
         status_code=status.HTTP_403_FORBIDDEN,
@@ -86,7 +91,7 @@ async def token_placeholder():
 
 
 @router.get("/logout", response_class=RedirectResponse)
-async def logout():
+async def logout() -> RedirectResponse:
     """Logout user by clearing cookies and redirecting to Keycloak logout."""
     post_logout_redirect_to_app = os.getenv(
         "KEYCLOAK_POST_LOGOUT_REDIRECT_URI",

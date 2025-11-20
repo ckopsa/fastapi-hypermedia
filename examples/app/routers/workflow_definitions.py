@@ -1,17 +1,23 @@
 from __future__ import annotations
 
-from typing import Annotated
+from typing import Annotated, Any
 
-import models
-from core.representor import Representor
-from core.security import AuthenticatedUser, get_current_user
-from dependencies import get_representor, get_transition_registry, get_workflow_service
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from services import WorkflowService
 
 from fastapi_hypermedia import cj_models, transitions
 from fastapi_hypermedia.cj_models import CollectionJson
+
+from .. import models
+from ..core.representor import Representor
+from ..core.security import AuthenticatedUser, get_current_user
+from ..dependencies import (
+    get_representor,
+    get_transition_registry,
+    get_workflow_service,
+)
+from ..schemas.hypermedia import WorkflowItem
+from ..services import WorkflowService
 
 router = APIRouter(
     prefix="/workflow-definitions",
@@ -38,34 +44,19 @@ async def get_workflow_definitions(
     transition_manager: transitions.TransitionManager = Depends(
         get_transition_registry
     ),
-):
+) -> Any:
     """Returns a Collection+JSON representation of workflow definitions."""
     if isinstance(current_user, RedirectResponse):
         return current_user
+    assert current_user is not None
     workflow_definitions: list[
         models.WorkflowDefinition
     ] = await service.list_workflow_definitions()
 
-    items = []
-    for item in workflow_definitions:
-        item_model = item.to_cj_data(
-            href=str(
-                request.url_for("view_workflow_definition", definition_id=item.id)
-            ),
-            links=[
-                t.to_link()
-                for t in [
-                    transition_manager.get_transition(
-                        "view_workflow_definition", {"definition_id": item.id}
-                    ),
-                    transition_manager.get_transition(
-                        "create_workflow_instance_from_definition",
-                        {"definition_id": item.id},
-                    ),
-                ]
-            ],
-        )
-        items.append(item_model)
+    items = [
+        WorkflowItem.from_entity(d, request, transition_manager)
+        for d in workflow_definitions
+    ]
 
     collection = cj_models.Collection(
         href=str(request.url),
@@ -80,6 +71,7 @@ async def get_workflow_definitions(
                     "simple_create_workflow_definition_form", {}
                 ),
             ]
+            if t
         ],
         items=items,
         queries=[],
@@ -101,14 +93,15 @@ async def create_workflow_instance_from_definition(
     definition_id: str,
     current_user: AuthenticatedUser | None = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
-):
+) -> Any:
     if isinstance(current_user, RedirectResponse):
         return current_user
 
-    definition = await service.list_workflow_definitions(definition_id=definition_id)
-    if not definition:
+    assert current_user is not None
+    definitions = await service.list_workflow_definitions(definition_id=definition_id)
+    if not definitions:
         return HTMLResponse(status_code=404, content="Workflow Definition not found")
-    definition = definition[0]
+    definition = definitions[0]
     new_instance = await service.create_workflow_instance(
         models.WorkflowInstance(
             workflow_definition_id=definition_id,
@@ -117,6 +110,7 @@ async def create_workflow_instance_from_definition(
             due_datetime=definition.due_datetime,
         )
     )
+    assert new_instance is not None
 
     return RedirectResponse(
         url=f"/workflow-instances/{new_instance.id}",  # Placeholder URL
@@ -139,11 +133,12 @@ async def view_workflow_definition(
     transition_manager: transitions.TransitionManager = Depends(
         get_transition_registry
     ),
-):
+) -> Any:
     """Returns a Collection+JSON representation of a specific workflow definition."""
     if isinstance(current_user, RedirectResponse):
         return current_user
 
+    assert current_user is not None
     workflow_definition: list[
         models.WorkflowDefinition
     ] = await service.list_workflow_definitions(definition_id=definition_id)
@@ -169,29 +164,31 @@ async def view_workflow_definition(
                 transition_manager.get_transition("get_workflow_instances", {}),
                 transition_manager.get_transition("get_workflow_definitions", {}),
             ]
+            if t
         ],
         items=items,
         queries=[],
     )
 
     first_workflow_definition: models.WorkflowDefinition = workflow_definition[0]
-    templates = [
-        transition_manager.get_transition(
-            "create_workflow_instance_from_definition", {"definition_id": definition_id}
-        ).to_template(),
-        transition_manager.get_transition(
-            "simple_create_workflow_definition", {}
-        ).to_template(
-            {
-                "id": first_workflow_definition.id,
-                "name": first_workflow_definition.name,
-                "description": first_workflow_definition.description,
-                "task_definitions": "\n".join(
-                    task.name for task in first_workflow_definition.task_definitions
-                ),
-            }
-        ),
-    ]
+    templates = []
+    if t1 := transition_manager.get_transition(
+        "create_workflow_instance_from_definition", {"definition_id": definition_id}
+    ):
+        templates.append(t1.to_template())
+    if t2 := transition_manager.get_transition("simple_create_workflow_definition", {}):
+        templates.append(
+            t2.to_template(
+                {
+                    "id": first_workflow_definition.id,
+                    "name": first_workflow_definition.name,
+                    "description": first_workflow_definition.description,
+                    "task_definitions": "\n".join(
+                        task.name for task in first_workflow_definition.task_definitions
+                    ),
+                }
+            )
+        )
     return await representor.represent(
         cj_models.CollectionJson(
             collection=collection,
@@ -213,31 +210,32 @@ async def create_workflow_definition(
     workflow_definition_task: Annotated[models.TaskDefinitionBase, Form()],
     service: WorkflowService = Depends(get_workflow_service),
     current_user: AuthenticatedUser | None = Depends(get_current_user),
-):
+) -> Any:
     """Returns a form to create a new workflow definition in Collection+JSON format."""
     if isinstance(current_user, RedirectResponse):
         return current_user
 
-    workflow_definition = await service.list_workflow_definitions(
+    assert current_user is not None
+    definitions = await service.list_workflow_definitions(
         definition_id=definition_id
     )
-    if not workflow_definition:
+    if not definitions:
         return HTMLResponse(status_code=404, content="Workflow Definition not found")
 
-    workflow_definition = workflow_definition[0]  # Assuming single definition returned
+    definition = definitions[0]  # Assuming single definition returned
     # Create a task for the new workflow definition
     await service.update_definition(
-        definition_id=workflow_definition.id,
-        name=workflow_definition.name,
-        description=workflow_definition.description,
-        task_definitions=workflow_definition.task_definitions
+        definition_id=definition.id,
+        name=definition.name,
+        description=definition.description,
+        task_definitions=definition.task_definitions
         + [workflow_definition_task],
     )
 
     return RedirectResponse(
         url=str(
             request.url_for(
-                "view_workflow_definition", definition_id=workflow_definition.id
+                "view_workflow_definition", definition_id=definition.id
             )
         ),
         status_code=303,
@@ -254,7 +252,7 @@ async def cj_create_workflow_definition(
     definition: Annotated[models.WorkflowDefinitionCreateRequest, Form()],
     current_user: AuthenticatedUser | None = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
-):
+) -> Any:
     """Creates a new workflow definition and returns it in Collection+JSON format."""
     if isinstance(current_user, RedirectResponse):
         return current_user
@@ -285,10 +283,12 @@ async def simple_create_workflow_definition_form(
         get_transition_registry
     ),
     representor: Representor = Depends(get_representor),
-):
+) -> Any:
     """Returns a Collection+JSON representation of a form to create a new workflow definition."""
     if isinstance(current_user, RedirectResponse):
         return current_user
+
+    assert current_user is not None
 
     collection = cj_models.Collection(
         href=str(request.url),
@@ -299,18 +299,22 @@ async def simple_create_workflow_definition_form(
                 transition_manager.get_transition("home", {}),
                 transition_manager.get_transition("get_workflow_definitions", {}),
             ]
+            if t
         ],
         items=[],
         queries=[],
     )
 
-    template = [
-        transition_manager.get_transition(
-            "simple_create_workflow_definition", {}
-        ).to_template(
-            defaults=models.SimpleWorkflowDefinitionCreateRequest().model_dump()
-        )
-    ]
+    t = transition_manager.get_transition("simple_create_workflow_definition", {})
+    template = (
+        [
+            t.to_template(
+                defaults=models.SimpleWorkflowDefinitionCreateRequest().model_dump()
+            )
+        ]
+        if t
+        else []
+    )
 
     return await representor.represent(
         cj_models.CollectionJson(
@@ -331,7 +335,7 @@ async def simple_create_workflow_definition(
     definition: Annotated[models.SimpleWorkflowDefinitionCreateRequest, Form()],
     current_user: AuthenticatedUser | None = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
-):
+) -> Any:
     """Creates a new workflow definition and returns it in Collection+JSON format."""
     if isinstance(current_user, RedirectResponse):
         return current_user
@@ -361,6 +365,7 @@ async def simple_create_workflow_definition(
             description=definition.description,
             task_definitions=task_definitions,
         )
+    assert created_definition is not None
     return RedirectResponse(
         url=str(
             request.url_for(

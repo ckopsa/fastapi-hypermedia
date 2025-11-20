@@ -1,15 +1,23 @@
 from __future__ import annotations
 
-import models
-from core.representor import Representor
-from core.security import AuthenticatedUser, get_current_user
-from dependencies import get_representor, get_transition_registry, get_workflow_service
+from typing import Any
+
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
-from services import WorkflowService
 
 from fastapi_hypermedia import cj_models, transitions
 from fastapi_hypermedia.cj_models import CollectionJson
+
+from .. import models
+from ..core.representor import Representor
+from ..core.security import AuthenticatedUser, get_current_user
+from ..dependencies import (
+    get_representor,
+    get_transition_registry,
+    get_workflow_service,
+)
+from ..schemas.hypermedia import TaskItem, WorkflowInstanceItem
+from ..services import WorkflowService
 
 router = APIRouter(
     prefix="/workflow-instances",
@@ -36,40 +44,20 @@ async def get_workflow_instances(
     transition_manager: transitions.TransitionManager = Depends(
         get_transition_registry
     ),
-):
+) -> Any:
     """Returns a Collection+JSON representation of workflow instances."""
     if isinstance(current_user, RedirectResponse):
         return current_user
 
+    assert current_user is not None
     workflow_instances: list[
         models.WorkflowInstance
     ] = await service.list_instances_for_user(user_id=current_user.user_id)
 
-    items = []
-    for item in workflow_instances:
-        links = []
-        if item.status == models.WorkflowStatus.archived:
-            links.append(
-                transition_manager.get_transition(
-                    "view_workflow_instance", {"instance_id": item.id}
-                ).to_link()
-            )
-        else:
-            links.append(
-                transition_manager.get_transition(
-                    "view_workflow_instance", {"instance_id": item.id}
-                ).to_link()
-            )
-            links.append(
-                transition_manager.get_transition(
-                    "archive_workflow_instance", {"instance_id": item.id}
-                ).to_link()
-            )
-        item_model = item.to_cj_data(
-            href=str(request.url_for("view_workflow_instance", instance_id=item.id)),
-            links=links,
-        )
-        items.append(item_model)
+    items = [
+        WorkflowInstanceItem.from_entity(d, request, transition_manager)
+        for d in workflow_instances
+    ]
 
     collection = cj_models.Collection(
         href=str(request.url),
@@ -81,6 +69,7 @@ async def get_workflow_instances(
                 transition_manager.get_transition("get_workflow_instances", {}),
                 transition_manager.get_transition("get_workflow_definitions", {}),
             ]
+            if t
         ],
         items=items,
     )
@@ -109,11 +98,12 @@ async def view_workflow_instance(
     transition_manager: transitions.TransitionManager = Depends(
         get_transition_registry
     ),
-):
+) -> Any:
     """Returns a Collection+JSON representation of a specific workflow instance."""
     if isinstance(current_user, RedirectResponse):
         return current_user
 
+    assert current_user is not None
     workflow_instance = await service.get_workflow_instance_with_tasks(
         instance_id=instance_id, user_id=current_user.user_id
     )
@@ -138,29 +128,15 @@ async def view_workflow_instance(
         else x.order + 100
     )
 
-    items = []
-    for item in [models.SimpleTaskInstance.from_task_instance(task) for task in tasks]:
-        links = []
-        if item.status == models.TaskStatus.completed:
-            links.append(
-                transition_manager.get_transition(
-                    "reopen_task_instance", {"task_id": item.id}
-                ).to_link()
-            )
-        else:
-            links.append(
-                transition_manager.get_transition(
-                    "complete_task_instance", {"task_id": item.id}
-                ).to_link()
-            )
-        items.append(
-            item.to_cj_data(
-                href=str(
-                    request.url_for("view_workflow_instance", instance_id=instance_id)
-                ),
-                links=links,
-            )
+    items = [
+        TaskItem.from_entity(
+            models.SimpleTaskInstance.from_task_instance(task),
+            request,
+            transition_manager,
+            instance_id,
         )
+        for task in tasks
+    ]
 
     collection = cj_models.Collection(
         href=str(request.url),
@@ -189,13 +165,15 @@ async def complete_task_instance(
     task_id: str,
     current_user: AuthenticatedUser | None = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
-):
+) -> Any:
     if isinstance(current_user, RedirectResponse):
         return current_user
 
+    assert current_user is not None
     task_instance = await service.complete_task(
         task_id=task_id, user_id=current_user.user_id
     )
+    assert task_instance is not None
 
     return RedirectResponse(
         url=str(
@@ -218,13 +196,15 @@ async def reopen_task_instance(
     task_id: str,
     current_user: AuthenticatedUser | None = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
-):
+) -> Any:
     if isinstance(current_user, RedirectResponse):
         return current_user
 
+    assert current_user is not None
     task_instance = await service.undo_complete_task(
         task_id=task_id, user_id=current_user.user_id
     )
+    assert task_instance is not None
 
     return RedirectResponse(
         url=str(
@@ -247,13 +227,15 @@ async def archive_workflow_instance(
     instance_id: str,
     current_user: AuthenticatedUser | None = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
-):
+) -> Any:
     if isinstance(current_user, RedirectResponse):
         return current_user
 
+    assert current_user is not None
     workflow_instance = await service.archive_workflow_instance(
         instance_id=instance_id, user_id=current_user.user_id
     )
+    assert workflow_instance is not None
 
     return RedirectResponse(
         url=str(

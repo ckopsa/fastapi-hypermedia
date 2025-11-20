@@ -1,8 +1,7 @@
 import uuid
 
-from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
-from sqlalchemy import Enum as SQLAlchemyEnum
-from sqlalchemy.orm import relationship
+from sqlalchemy import Column, DateTime, Enum, ForeignKey, Integer, String
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from .base import Base
 from .enums import TaskStatus
@@ -22,8 +21,8 @@ class TaskInstance(Base):
     )
     name = Column(String, nullable=False)
     order = Column(Integer, nullable=False)
-    status = Column(
-        SQLAlchemyEnum(TaskStatus), nullable=False, default=TaskStatus.pending
+    status: Mapped[TaskStatus] = mapped_column(
+        Enum(TaskStatus), nullable=False, default=TaskStatus.pending
     )
     due_datetime = Column(DateTime, nullable=True)
 

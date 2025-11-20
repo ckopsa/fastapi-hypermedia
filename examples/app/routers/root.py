@@ -1,18 +1,21 @@
 from __future__ import annotations
 
-from core.representor import Representor
-from core.security import AuthenticatedUser, get_current_user
-from dependencies import get_representor, get_transition_registry
+from typing import Any
+
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from fastapi_hypermedia import cj_models, transitions
 
+from ..core.representor import Representor
+from ..core.security import AuthenticatedUser, get_current_user
+from ..dependencies import get_representor, get_transition_registry
+
 router = APIRouter()
 
 
 @router.get("/health", status_code=status.HTTP_200_OK)
-async def healthcheck():
+async def healthcheck() -> dict[str, str]:
     """API endpoint for health check."""
     return {"status": "ok"}
 
@@ -35,7 +38,7 @@ async def home(
         get_transition_registry
     ),
     representor: Representor = Depends(get_representor),
-):
+) -> Any:
     """Serves the homepage."""
     if isinstance(current_user, RedirectResponse):
         return current_user
@@ -57,6 +60,7 @@ async def home(
                                 "get_workflow_instances", {}
                             ),
                         ]
+                        if t
                     ],
                 )
             ),

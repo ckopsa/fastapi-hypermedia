@@ -1,5 +1,6 @@
 import datetime
 import enum
+from typing import Any
 
 from fastapi import Request
 from pydantic import BaseModel
@@ -16,8 +17,8 @@ class FormProperty(BaseModel):
         StrictBool
         | int
         | float
-        | dict
-        | list
+        | dict[str, Any]
+        | list[Any]
         | None
         | datetime.datetime
         | datetime.date
@@ -37,9 +38,9 @@ class Form(BaseModel):
     tags: str
     title: str
     method: str
-    properties: list[dict]
+    properties: list[dict[str, Any]]
 
-    def to_link(self, rel: str | None = None):
+    def to_link(self, rel: str | None = None) -> cj_models.Link:
         return cj_models.Link(
             rel=rel or self.rel,
             href=self.href,
@@ -47,7 +48,7 @@ class Form(BaseModel):
             method=self.method,
         )
 
-    def to_query(self):
+    def to_query(self) -> cj_models.Query:
         return cj_models.Query(
             rel=self.rel,
             href=self.href,
@@ -57,7 +58,7 @@ class Form(BaseModel):
 
     def to_template(
         self, defaults: dict[str, str | StrictBool | int | float | None] | None = None
-    ):
+    ) -> cj_models.Template:
         template_data = []
         for prop in self.properties:
             default_value = defaults.get(prop["name"]) if defaults else None
@@ -88,7 +89,7 @@ class TransitionManager:
         self.routes_info: dict[str, Form] = {}
         self._load_routes_from_schema(request)
 
-    def _load_routes_from_schema(self, request: Request):
+    def _load_routes_from_schema(self, request: Request) -> None:
         """
         Parses the OpenAPI schema to build an internal cache of route information.
         """
@@ -268,6 +269,8 @@ class TransitionManager:
         """
         Get a specific transition by its name.
         """
-        form = self.routes_info.get(transition_name).copy(deep=True)
-        form.href = form.href.format(**context)
+        form = self.routes_info.get(transition_name)
+        if form is not None:
+            form = form.copy(deep=True)
+            form.href = form.href.format(**context)
         return form

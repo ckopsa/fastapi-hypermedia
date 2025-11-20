@@ -7,8 +7,11 @@ dev:
 	cd examples/app && uv run fastapi dev main.py
 
 lint:
-	uv run ruff check .
-	uv run mypy .
+	uv run ruff check fastapi_hypermedia/
+	uv run mypy fastapi_hypermedia/
+	uv run ruff check tests/
+	uv run mypy examples/app/
+	cd examples/app && uv run ruff check .
 
 format:
 	uv run ruff check --fix .

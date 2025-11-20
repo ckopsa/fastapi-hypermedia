@@ -4,8 +4,8 @@ from datetime import date as DateObject  # Ensure datetime and timedelta
 from datetime import datetime, timedelta
 from typing import Any
 
-import models
-from models import (
+from . import models
+from .models import (
     TaskDefinitionBase,
     TaskInstance,
     TaskStatus,
@@ -13,7 +13,7 @@ from models import (
     WorkflowInstance,
     WorkflowStatus,
 )
-from repository import (
+from .repository import (
     TaskInstanceRepository,
     WorkflowDefinitionRepository,
     WorkflowInstanceRepository,
@@ -119,7 +119,7 @@ class WorkflowService:
         updated_task = await self.task_repo.update_task_instance(task_id, task)
 
         if updated_task:
-            workflow_details: models.WorkflowInstance = (
+            workflow_details: models.WorkflowInstance | None = (
                 await self.get_workflow_instance_with_tasks(
                     task.workflow_instance_id, user_id
                 )
@@ -173,7 +173,7 @@ class WorkflowService:
         name: str,
         description: str | None,
         task_definitions: list[TaskDefinitionBase],
-    ) -> WorkflowDefinition | None:
+    ) -> WorkflowDefinition:
         if not name.strip():
             raise ValueError("Definition name cannot be empty.")
         if not task_definitions:

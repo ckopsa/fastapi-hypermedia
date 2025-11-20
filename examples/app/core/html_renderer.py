@@ -2,6 +2,7 @@ from abc import ABC, abstractmethod
 from typing import Any
 
 from fastapi.requests import Request
+from fastapi.responses import Response
 from fastapi.templating import Jinja2Templates
 
 
@@ -9,17 +10,17 @@ class HtmlRendererInterface(ABC):
     @abstractmethod
     async def render(
         self, template_name: str, request: Request, context: dict[str, Any]
-    ) -> str:
+    ) -> Response:
         pass
 
 
 class Jinja2HtmlRenderer(HtmlRendererInterface):
-    def __init__(self, templates: Jinja2Templates):
+    def __init__(self, templates: Jinja2Templates) -> None:
         self.templates = templates
 
     async def render(
         self, template_name: str, request: Request, context: dict[str, Any]
-    ) -> str:
+    ) -> Response:
         return self.templates.TemplateResponse(
             template_name, {"request": request, **context}
         )

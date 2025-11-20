@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 import datetime
+from typing import Any
 
 from pydantic import BaseModel
 from pydantic import Field as PydanticField
@@ -22,8 +23,8 @@ class ItemData(BaseModel):
         StrictBool
         | int
         | float
-        | dict
-        | list
+        | dict[str, Any]
+        | list[Any]
         | None
         | datetime.datetime
         | datetime.date
@@ -103,7 +104,9 @@ class CollectionJson(BaseModel):
     error: Error | None = PydanticField(None, description="Error details, if any")
 
 
-def to_collection_json_data(self: BaseModel, href="", links=None, rel="item") -> Item:
+def to_collection_json_data(
+    self: BaseModel, href: str = "", links: list[Link] | None = None, rel: str = "item"
+) -> Item:
     """
     Converts a Pydantic model instance into a Collection+JSON 'data' array.
     'self' will be the model instance when this is called.
@@ -119,6 +122,7 @@ def to_collection_json_data(self: BaseModel, href="", links=None, rel="item") ->
                 value=model_dict.get(name),
                 prompt=definition.get("title") or name.replace("_", " ").title(),
                 type=definition.get("type"),
+                input_type=None,
                 render_hint=definition.get("x-render-hint"),
             )
         )
@@ -130,4 +134,4 @@ def to_collection_json_data(self: BaseModel, href="", links=None, rel="item") ->
     )
 
 
-BaseModel.to_cj_data = to_collection_json_data
+BaseModel.to_cj_data = to_collection_json_data  # type: ignore[attr-defined]

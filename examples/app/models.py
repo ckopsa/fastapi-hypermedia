@@ -1,8 +1,24 @@
 import uuid
 from datetime import datetime
 
-from db_models.enums import TaskStatus, WorkflowStatus
 from pydantic import BaseModel, Field
+
+from fastapi_hypermedia import cj_models
+
+from .db_models.enums import TaskStatus, WorkflowStatus
+
+__all__ = [
+    "TaskDefinitionBase",
+    "TaskInstance",
+    "SimpleTaskInstance",
+    "WorkflowInstance",
+    "WorkflowDefinition",
+    "WorkflowDefinitionCreateRequest",
+    "SimpleWorkflowDefinitionCreateRequest",
+    "WorkflowInstanceCreateRequest",
+    "TaskStatus",
+    "WorkflowStatus",
+]
 
 
 class TaskDefinitionBase(BaseModel):
@@ -25,6 +41,11 @@ class TaskDefinitionBase(BaseModel):
         json_schema_extra={"x-render-hint": "hidden"},
     )
 
+    def to_cj_data(
+        self, href: str = "", links: list[cj_models.Link] | None = None, rel: str = "item"
+    ) -> cj_models.Item:
+        return cj_models.to_collection_json_data(self, href, links, rel)
+
 
 class TaskInstance(BaseModel):
     id: str = Field(default_factory=lambda: "task_" + str(uuid.uuid4())[:8])
@@ -44,8 +65,13 @@ class SimpleTaskInstance(BaseModel):
     order: int = Field(..., json_schema_extra={"x-render-hint": "hidden"})
     status: TaskStatus = TaskStatus.pending
 
+    def to_cj_data(
+        self, href: str = "", links: list[cj_models.Link] | None = None, rel: str = "item"
+    ) -> cj_models.Item:
+        return cj_models.to_collection_json_data(self, href, links, rel)
+
     @staticmethod
-    def from_task_instance(task_instance: TaskInstance):
+    def from_task_instance(task_instance: TaskInstance) -> "SimpleTaskInstance":
         return SimpleTaskInstance(
             id=task_instance.id,
             name=task_instance.name,
@@ -74,6 +100,11 @@ class WorkflowInstance(BaseModel):
         default_factory=list, json_schema_extra={"x-render-hint": "hidden"}
     )
 
+    def to_cj_data(
+        self, href: str = "", links: list[cj_models.Link] | None = None, rel: str = "item"
+    ) -> cj_models.Item:
+        return cj_models.to_collection_json_data(self, href, links, rel)
+
     class Config:
         from_attributes = True
 
@@ -91,6 +122,11 @@ class WorkflowDefinition(BaseModel):
     due_datetime: datetime | None = Field(
         None, json_schema_extra={"x-render-hint": "hidden"}
     )
+
+    def to_cj_data(
+        self, href: str = "", links: list[cj_models.Link] | None = None, rel: str = "item"
+    ) -> cj_models.Item:
+        return cj_models.to_collection_json_data(self, href, links, rel)
 
     class Config:
         from_attributes = True

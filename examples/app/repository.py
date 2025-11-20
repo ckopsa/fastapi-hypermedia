@@ -2,18 +2,20 @@
 from abc import ABC, abstractmethod
 from datetime import date as DateObject
 
-from db_models.enums import TaskStatus, WorkflowStatus
-from db_models.task import TaskInstance as TaskInstanceORM
-from db_models.task_definition import TaskDefinition as TaskDefinitionORM
-from db_models.workflow import WorkflowDefinition as WorkflowDefinitionORM
-from db_models.workflow import WorkflowInstance as WorkflowInstanceORM
-from models import (
+from sqlalchemy import case
+from sqlalchemy.orm import Session
+
+from .db_models.enums import TaskStatus, WorkflowStatus
+from .db_models.task import TaskInstance as TaskInstanceORM
+from .db_models.task_definition import TaskDefinition as TaskDefinitionORM
+from .db_models.workflow import WorkflowDefinition as WorkflowDefinitionORM
+from .db_models.workflow import WorkflowInstance as WorkflowInstanceORM
+from .models import (
     TaskDefinitionBase,
     TaskInstance,
     WorkflowDefinition,
     WorkflowInstance,
 )
-from sqlalchemy import case
 
 # In-memory stores
 _workflow_definitions_db: dict[str, WorkflowDefinition] = {}
@@ -53,7 +55,7 @@ class WorkflowDefinitionRepository(ABC):
         name: str,
         description: str | None,
         task_definitions_data: list[TaskDefinitionBase],
-    ) -> WorkflowDefinition | None:
+    ) -> WorkflowDefinition:
         pass
 
     @abstractmethod
@@ -147,7 +149,7 @@ class TaskNotFoundError(Exception):
 class PostgreSQLWorkflowRepository(
     WorkflowDefinitionRepository, WorkflowInstanceRepository, TaskInstanceRepository
 ):
-    def __init__(self, db_session):
+    def __init__(self, db_session: Session):
         self.db_session = db_session
 
     async def get_workflow_instance_by_id(
@@ -353,15 +355,15 @@ class PostgreSQLWorkflowRepository(
         name: str,
         description: str | None,
         task_definitions_data: list[TaskDefinitionBase],
-    ) -> WorkflowDefinition | None:
+    ) -> WorkflowDefinition:
         db_definition = (
             self.db_session.query(WorkflowDefinitionORM)
             .filter(WorkflowDefinitionORM.id == definition_id)
             .first()
         )
         if db_definition:
-            db_definition.name = name
-            db_definition.description = description
+            db_definition.name = name  # type: ignore[assignment]
+            db_definition.description = description  # type: ignore[assignment]
 
             self.db_session.query(TaskDefinitionORM).filter(
                 TaskDefinitionORM.workflow_definition_id == definition_id
@@ -381,6 +383,8 @@ class PostgreSQLWorkflowRepository(
             return WorkflowDefinition.model_validate(
                 db_definition, from_attributes=True
             )
+        else:
+            raise ValueError(f"Workflow definition {definition_id} not found")
         return None
 
     async def delete_workflow_definition(self, definition_id: str) -> None:
@@ -415,10 +419,10 @@ class PostgreSQLWorkflowRepository(
 class InMemoryWorkflowRepository(
     WorkflowDefinitionRepository, WorkflowInstanceRepository, TaskInstanceRepository
 ):
-    def __init__(self):
+    def __init__(self) -> None:
         self._seed_definitions()
 
-    def _seed_definitions(self):
+    def _seed_definitions(self) -> None:
         if not _workflow_definitions_db:
             def1 = WorkflowDefinition(
                 id="def_morning_quick_start",
@@ -578,7 +582,7 @@ class InMemoryWorkflowRepository(
         name: str,
         description: str | None,
         task_definitions_data: list[TaskDefinitionBase],
-    ) -> WorkflowDefinition | None:
+    ) -> WorkflowDefinition:
         if definition_id in _workflow_definitions_db:
             updated_definition = WorkflowDefinition(
                 id=definition_id,
@@ -588,7 +592,8 @@ class InMemoryWorkflowRepository(
             )
             _workflow_definitions_db[definition_id] = updated_definition
             return updated_definition.model_copy(deep=True)
-        return None
+        else:
+            raise ValueError(f"Workflow definition {definition_id} not found")
 
     async def delete_workflow_definition(self, definition_id: str) -> None:
         if definition_id not in _workflow_definitions_db:

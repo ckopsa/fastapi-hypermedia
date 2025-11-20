@@ -2,43 +2,74 @@
 
 A FastAPI extension for building hypermedia APIs using the Collection+JSON format.
 
+## Features
+
+- **Collection+JSON Support**: Full support for defining responses using the Collection+JSON standard.
+- **Hypermedia Transitions**: Dynamically discover and manage links and forms based on your FastAPI routes.
+- **HTML Rendering**: Built-in support for rendering Collection+JSON as HTML using Jinja2 templates.
+
 ## Installation
 
-Install the core package:
+Install the package using pip:
 
 ```bash
 pip install fastapi-hypermedia
 ```
 
-For development with the example app (optional):
+Or using `uv`:
 
 ```bash
-pip install fastapi-hypermedia[app]
+uv add fastapi-hypermedia
 ```
 
 ## Usage
 
-Import and use the hypermedia components in your FastAPI app:
+Here is a basic example of how to use `fastapi-hypermedia` in your application.
 
 ```python
+from fastapi import FastAPI, Request
+from fastapi.responses import HTMLResponse
 from fastapi_hypermedia import cj_models, transitions
-# ... build hypermedia responses
+
+app = FastAPI()
+
+# Initialize the TransitionManager (typically as a dependency)
+# ...
+
+@app.get("/")
+async def root(request: Request):
+    collection = cj_models.Collection(
+        href=str(request.url),
+        title="My API",
+        links=[
+            cj_models.Link(rel="self", href=str(request.url))
+        ]
+    )
+    return cj_models.CollectionJson(collection=collection)
 ```
 
-## Example App
+For a complete working example, check the `examples/app` directory.
 
-An example FastAPI application demonstrating hypermedia functionality is provided in `examples/app/`.
+## Development
 
-To run the example:
+This project is set up with modern python tooling.
+
+### Requirements
+
+- Python 3.10+
+- [uv](https://github.com/astral-sh/uv)
+
+### Getting Started
+
+To start developing, refer to [CONTRIBUTING.md](CONTRIBUTING.md).
+
+Quick start:
 
 ```bash
-cd examples/app
-pip install -r requirements.txt
-uvicorn main:app --reload
+make install
+make test
 ```
 
-## Features
+## Contributing
 
-- Collection+JSON model definitions
-- Hypermedia transitions
-- HTML rendering using Jinja2 templates
+We welcome contributions! Please read our [Contributing Guide](CONTRIBUTING.md) for details on how to submit pull requests.

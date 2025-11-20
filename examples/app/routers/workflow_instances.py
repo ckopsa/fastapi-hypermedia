@@ -5,15 +5,15 @@ from typing import Any
 from fastapi import APIRouter, Depends, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from fastapi_hypermedia import cj_models, transitions
+from fastapi_hypermedia import Hypermedia, cj_models
 from fastapi_hypermedia.cj_models import CollectionJson
 
 from .. import models
 from ..core.representor import Representor
 from ..core.security import AuthenticatedUser, get_current_user
 from ..dependencies import (
+    get_hypermedia,
     get_representor,
-    get_transition_registry,
     get_workflow_service,
 )
 from ..schemas.hypermedia import TaskItem, WorkflowInstanceItem
@@ -41,9 +41,7 @@ async def get_workflow_instances(
     current_user: AuthenticatedUser | None = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
     representor: Representor = Depends(get_representor),
-    transition_manager: transitions.TransitionManager = Depends(
-        get_transition_registry
-    ),
+    hypermedia: Hypermedia = Depends(get_hypermedia),
 ) -> Any:
     """Returns a Collection+JSON representation of workflow instances."""
     if isinstance(current_user, RedirectResponse):
@@ -55,32 +53,21 @@ async def get_workflow_instances(
     ] = await service.list_instances_for_user(user_id=current_user.user_id)
 
     items = [
-        WorkflowInstanceItem.from_entity(d, request, transition_manager)
+        WorkflowInstanceItem.from_entity(d, request, hypermedia.tm)
         for d in workflow_instances
     ]
 
-    collection = cj_models.Collection(
-        href=str(request.url),
+    cj = hypermedia.create_collection_json(
         title="Workflow Instances",
         links=[
-            t.to_link()
-            for t in [
-                transition_manager.get_transition("home", {}),
-                transition_manager.get_transition("get_workflow_instances", {}),
-                transition_manager.get_transition("get_workflow_definitions", {}),
-            ]
-            if t
+            "home",
+            "get_workflow_instances",
+            "get_workflow_definitions",
         ],
         items=items,
     )
 
-    return await representor.represent(
-        cj_models.CollectionJson(
-            collection=collection,
-            template=[],
-            error=None,
-        )
-    )
+    return await representor.represent(cj)
 
 
 @router.get(
@@ -95,9 +82,7 @@ async def view_workflow_instance(
     current_user: AuthenticatedUser | None = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
     representor: Representor = Depends(get_representor),
-    transition_manager: transitions.TransitionManager = Depends(
-        get_transition_registry
-    ),
+    hypermedia: Hypermedia = Depends(get_hypermedia),
 ) -> Any:
     """Returns a Collection+JSON representation of a specific workflow instance."""
     if isinstance(current_user, RedirectResponse):
@@ -110,15 +95,17 @@ async def view_workflow_instance(
     if not workflow_instance:
         return HTMLResponse(status_code=404, content="Workflow Instance not found")
 
-    page_transitions = [
-        transition_manager.get_transition("home", {}),
-        transition_manager.get_transition("get_workflow_instances", {}),
-        transition_manager.get_transition("get_workflow_definitions", {}),
-        transition_manager.get_transition(
-            "view_workflow_definition",
-            {"definition_id": workflow_instance.workflow_definition_id},
-        ),
+    links: list[str | cj_models.Link | tuple[str, str]] = [
+        "home",
+        "get_workflow_instances",
+        "get_workflow_definitions",
     ]
+
+    if t := hypermedia.tm.get_transition(
+        "view_workflow_definition",
+        {"definition_id": workflow_instance.workflow_definition_id},
+    ):
+        links.append(t.to_link())
 
     tasks = workflow_instance.tasks
     # sort by completed last and then order
@@ -132,26 +119,19 @@ async def view_workflow_instance(
         TaskItem.from_entity(
             models.SimpleTaskInstance.from_task_instance(task),
             request,
-            transition_manager,
+            hypermedia.tm,
             instance_id,
         )
         for task in tasks
     ]
 
-    collection = cj_models.Collection(
-        href=str(request.url),
+    cj = hypermedia.create_collection_json(
         title=f"{workflow_instance.name} - {workflow_instance.status.title()}",
-        links=[t.to_link() for t in page_transitions if t],
+        links=links,
         items=items,
     )
 
-    return await representor.represent(
-        cj_models.CollectionJson(
-            collection=collection,
-            template=[],
-            error=None,
-        )
-    )
+    return await representor.represent(cj)
 
 
 @router.post(

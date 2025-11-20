@@ -268,7 +268,9 @@ class TransitionManager:
                                     )
                             else:
                                 pass
-                request.app.state.hypermedia_routes_info[operation.get("operationId")] = Form(
+                request.app.state.hypermedia_routes_info[
+                    operation.get("operationId")
+                ] = Form(
                     id=operation.get("operationId"),
                     name=operation.get("operationId"),
                     href=path,

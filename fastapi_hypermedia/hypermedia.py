@@ -66,9 +66,9 @@ class Hypermedia:
         href: str | None = None,
         items: Sequence[BaseModel | Item | Any] | None = None,
         item_href: Callable[[Any], str] | None = None,
-        links: Sequence[str | Link | tuple[str, str]] | None = None,
-        queries: Sequence[str | Query | tuple[str, str]] | None = None,
-        templates: Sequence[str | Template | tuple[str, str]] | None = None,
+        links: Sequence[str | Link | tuple[Any, ...] | Callable[..., Any]] | None = None,
+        queries: Sequence[str | Query | tuple[Any, ...] | Callable[..., Any]] | None = None,
+        templates: Sequence[str | Template | tuple[Any, ...] | Callable[..., Any]] | None = None,
         error: Any = None,
     ) -> CollectionJson:
         """

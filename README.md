@@ -24,20 +24,32 @@ uv add fastapi-hypermedia
 
 ## Usage
 
-Here is a basic example of how to use `fastapi-hypermedia` in your application.
+Here is a basic example of how to use `fastapi-hypermedia` in your application using the new `Hypermedia` dependency.
 
 ```python
-from fastapi import FastAPI, Request
-from fastapi.responses import HTMLResponse
-from fastapi_hypermedia import cj_models, transitions
+from fastapi import FastAPI, Depends, Request
+from fastapi_hypermedia import Hypermedia
 
 app = FastAPI()
 
-# Initialize the TransitionManager (typically as a dependency)
-# ...
+@app.get("/", name="root")
+async def root(request: Request, hm: Hypermedia = Depends(Hypermedia)):
+    return hm.create_collection_response(
+        title="My API",
+        links=["root"]
+    )
+```
 
-@app.get("/")
-async def root(request: Request):
+Legacy usage (direct model manipulation) is also supported:
+
+```python
+from fastapi import FastAPI, Request
+from fastapi_hypermedia import cj_models
+
+app = FastAPI()
+
+@app.get("/legacy")
+async def legacy(request: Request):
     collection = cj_models.Collection(
         href=str(request.url),
         title="My API",

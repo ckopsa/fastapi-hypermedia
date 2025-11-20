@@ -103,16 +103,17 @@ class TransitionManager:
     def __init__(self, request: Request):
         self.page_transitions: dict[str, list[str]] = {}
         self.item_transitions: dict[str, list[str]] = {}
-        self.routes_info: dict[str, Form] = {}
-        self._load_routes_from_schema(request)
+
+        if not hasattr(request.app.state, "hypermedia_routes_info"):
+            request.app.state.hypermedia_routes_info = {}
+            self._load_routes_from_schema(request)
+
+        self.routes_info: dict[str, Form] = request.app.state.hypermedia_routes_info
 
     def _load_routes_from_schema(self, request: Request) -> None:
         """
         Parses the OpenAPI schema to build an internal cache of route information.
         """
-        if self.routes_info:
-            return
-
         schema = request.app.openapi()
         for path, path_item in schema.get("paths", {}).items():
             for method, operation in path_item.items():
@@ -267,7 +268,7 @@ class TransitionManager:
                                     )
                             else:
                                 pass
-                self.routes_info[operation.get("operationId")] = Form(
+                request.app.state.hypermedia_routes_info[operation.get("operationId")] = Form(
                     id=operation.get("operationId"),
                     name=operation.get("operationId"),
                     href=path,
@@ -295,6 +296,6 @@ class TransitionManager:
         """
         form = self.routes_info.get(transition_name)
         if form is not None:
-            form = form.copy(deep=True)
+            form = form.model_copy(deep=True)
             form.href = form.href.format(**context)
         return form

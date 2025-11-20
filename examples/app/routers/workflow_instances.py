@@ -1,15 +1,15 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Request, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse
-
 import models
-from fastapi_hypermedia import cj_models, transitions
-from fastapi_hypermedia.cj_models import CollectionJson
 from core.representor import Representor
 from core.security import AuthenticatedUser, get_current_user
-from dependencies import get_workflow_service, get_transition_registry, get_representor
+from dependencies import get_representor, get_transition_registry, get_workflow_service
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from services import WorkflowService
+
+from fastapi_hypermedia import cj_models, transitions
+from fastapi_hypermedia.cj_models import CollectionJson
 
 router = APIRouter(
     prefix="/workflow-instances",
@@ -112,8 +112,6 @@ async def view_workflow_instance(
                                           {"definition_id": workflow_instance.workflow_definition_id}),
     ]
 
-    item_transitions = [
-    ]
 
     tasks = workflow_instance.tasks
     # sort by completed last and then order

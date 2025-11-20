@@ -1,7 +1,5 @@
 import datetime
 import enum
-from typing import Dict, Union
-from typing import Optional, List
 
 from fastapi import Request
 from pydantic import BaseModel
@@ -14,11 +12,11 @@ class FormProperty(BaseModel):
     name: str
     type: str
     prompt: str
-    value: Union[StrictBool, int, float, dict, list, None, datetime.datetime, datetime.date, str] = None
+    value: StrictBool | int | float | dict | list | None | datetime.datetime | datetime.date | str = None
     required: bool = False
-    input_type: Optional[str] = None
-    options: Optional[List[str]] = None
-    render_hint: Optional[str] = None
+    input_type: str | None = None
+    options: list[str] | None = None
+    render_hint: str | None = None
 
 
 class Form(BaseModel):
@@ -31,7 +29,7 @@ class Form(BaseModel):
     method: str
     properties: list[dict]
 
-    def to_link(self, rel: Optional[str] = None):
+    def to_link(self, rel: str | None = None):
         return cj_models.Link(
             rel=rel or self.rel,
             href=self.href,
@@ -47,7 +45,7 @@ class Form(BaseModel):
             data=[cj_models.TemplateData(**prop) for prop in self.properties],
         )
 
-    def to_template(self, defaults: Optional[Dict[str, Union[str, StrictBool, int, float, None]]] = None):
+    def to_template(self, defaults: dict[str, str | StrictBool | int | float | None] | None = None):
         template_data = []
         for prop in self.properties:
             default_value = defaults.get(prop['name']) if defaults else None
@@ -75,9 +73,9 @@ class TransitionManager:
     """
 
     def __init__(self, request: Request):
-        self.page_transitions: Dict[str, List[str]] = {}
-        self.item_transitions: Dict[str, List[str]] = {}
-        self.routes_info: Dict[str, Form] = {}
+        self.page_transitions: dict[str, list[str]] = {}
+        self.item_transitions: dict[str, list[str]] = {}
+        self.routes_info: dict[str, Form] = {}
         self._load_routes_from_schema(request)
 
     def _load_routes_from_schema(self, request: Request):
@@ -95,7 +93,7 @@ class TransitionManager:
                     continue
 
                 # Extract parameters for form properties
-                params: List[FormProperty] = []
+                params: list[FormProperty] = []
                 # From path e.g. /wip/{item_id}
                 for param in operation.get("parameters", []):
                     if param.get("in") == "path":
@@ -207,7 +205,7 @@ class TransitionManager:
                     properties=[prop.model_dump() for prop in params],
                 )
 
-    def get_transition(self, transition_name: str, context: Dict[str, str]) -> Optional[Form]:
+    def get_transition(self, transition_name: str, context: dict[str, str]) -> Form | None:
         """
         Get a specific transition by its name.
         """

@@ -31,7 +31,7 @@ def sample_items():
     ]
 
 
-from fastapi.routing import APIRoute
+from fastapi.routing import APIRoute  # noqa: E402
 
 
 def generate_unique_id(route: APIRoute) -> str:
@@ -41,7 +41,9 @@ def generate_unique_id(route: APIRoute) -> str:
 @pytest.fixture
 def test_app():
     """Minimal FastAPI app for testing"""
-    app = FastAPI(title="Test Hypermedia API", generate_unique_id_function=generate_unique_id)
+    app = FastAPI(
+        title="Test Hypermedia API", generate_unique_id_function=generate_unique_id
+    )
     return app
 
 

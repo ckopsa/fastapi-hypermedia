@@ -1,11 +1,14 @@
 import uuid
-from datetime import datetime # Added for default value
+from datetime import datetime  # Added for default value
 
-from sqlalchemy import Column, String, Text, Date, Enum as SQLAlchemyEnum, ForeignKey, DateTime
+from sqlalchemy import Column, DateTime, ForeignKey, String, Text
+from sqlalchemy import Enum as SQLAlchemyEnum
+
 # Remove JSONB from imports if it's no longer used
 from sqlalchemy.orm import relationship
 
 from .base import Base
+
 # Ensure TaskDefinition is imported if it's type hinted, though SQLAlchemy relationships use strings
 # from app.db_models.task_definition import TaskDefinition # May not be needed here
 from .enums import WorkflowStatus

@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Request, Depends, status
+from core.representor import Representor
+from core.security import AuthenticatedUser, get_current_user
+from dependencies import get_representor, get_transition_registry
+from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from fastapi_hypermedia import cj_models, transitions
-from core.representor import Representor
-from core.security import AuthenticatedUser, get_current_user
-from dependencies import get_transition_registry, get_representor
 
 router = APIRouter()
 

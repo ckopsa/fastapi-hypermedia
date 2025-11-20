@@ -2,12 +2,15 @@ import os
 from urllib.parse import quote_plus
 
 import requests
-from fastapi import APIRouter, Request, HTTPException
-from fastapi import status
+from config import (
+    KEYCLOAK_API_CLIENT_ID,
+    KEYCLOAK_API_CLIENT_SECRET,
+    KEYCLOAK_REALM,
+    KEYCLOAK_REDIRECT_URI,
+    KEYCLOAK_SERVER_URL,
+)
+from fastapi import APIRouter, HTTPException, Request, status
 from fastapi.responses import RedirectResponse
-
-from config import KEYCLOAK_SERVER_URL, KEYCLOAK_REALM, KEYCLOAK_API_CLIENT_ID, KEYCLOAK_API_CLIENT_SECRET, \
-    KEYCLOAK_REDIRECT_URI
 
 router = APIRouter(tags=["auth"])
 

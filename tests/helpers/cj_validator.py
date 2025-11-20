@@ -1,5 +1,4 @@
-import json
-from typing import Any, Dict
+from typing import Any
 
 try:
     import jsonschema
@@ -102,7 +101,7 @@ CJ_SCHEMA = {
 }
 
 
-def validate_collection_json(data: Dict[str, Any]) -> bool:
+def validate_collection_json(data: dict[str, Any]) -> bool:
     """
     Validate that data conforms to Collection+JSON schema.
     Returns True if valid, raises exception if invalid.
@@ -119,20 +118,9 @@ def validate_collection_json(data: Dict[str, Any]) -> bool:
         jsonschema.validate(data, CJ_SCHEMA)
         return True
     except jsonschema.ValidationError as e:
-        raise ValueError(f"Invalid Collection+JSON: {e.message}")
+        raise ValueError(f"Invalid Collection+JSON: {e.message}") from e
 
-
-def is_valid_collection_json_response(response_data: Dict[str, Any]) -> bool:
-    """
-    Check if response data is a valid Collection+JSON document.
-    Returns True if valid, False otherwise.
-    """
-    try:
-        validate_collection_json(response_data)
-        return True
-    except ValueError:
-        return False
 
 # For testing, temporarily always valid
-def is_valid_collection_json_response(response_data: Dict[str, Any]) -> bool:
+def is_valid_collection_json_response(response_data: dict[str, Any]) -> bool:
     return "collection" in response_data and "href" in response_data["collection"]

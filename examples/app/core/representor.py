@@ -1,5 +1,5 @@
 from fastapi import Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import JSONResponse
 
 from fastapi_hypermedia import cj_models
 

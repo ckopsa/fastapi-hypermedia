@@ -1,6 +1,7 @@
 import uuid
 
-from sqlalchemy import Column, String, Integer, Enum as SQLAlchemyEnum, ForeignKey, DateTime
+from sqlalchemy import Column, DateTime, ForeignKey, Integer, String
+from sqlalchemy import Enum as SQLAlchemyEnum
 from sqlalchemy.orm import relationship
 
 from .base import Base

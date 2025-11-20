@@ -1,5 +1,4 @@
 """Developer acceptance tests for transition discovery"""
-from fastapi import Request
 
 from fastapi_hypermedia.transitions import TransitionManager
 from tests.conftest import SampleCreateItem

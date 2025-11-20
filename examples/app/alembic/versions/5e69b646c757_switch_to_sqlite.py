@@ -1,13 +1,12 @@
 """switch to sqlite
 
 Revision ID: 5e69b646c757
-Revises: 
+Revises:
 Create Date: 2025-11-19 23:51:54.865634
 
 """
-from alembic import op
 import sqlalchemy as sa
-
+from alembic import op
 
 # revision identifiers, used by Alembic.
 revision = '5e69b646c757'

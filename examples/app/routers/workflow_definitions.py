@@ -1,17 +1,17 @@
 from __future__ import annotations
 
-from typing import Annotated, List
-
-from fastapi import APIRouter, Request, Depends, Form
-from fastapi.responses import HTMLResponse, RedirectResponse
+from typing import Annotated
 
 import models
-from fastapi_hypermedia import cj_models, transitions
-from fastapi_hypermedia.cj_models import CollectionJson
 from core.representor import Representor
 from core.security import AuthenticatedUser, get_current_user
-from dependencies import get_workflow_service, get_transition_registry, get_representor
+from dependencies import get_representor, get_transition_registry, get_workflow_service
+from fastapi import APIRouter, Depends, Form, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from services import WorkflowService
+
+from fastapi_hypermedia import cj_models, transitions
+from fastapi_hypermedia.cj_models import CollectionJson
 
 router = APIRouter(
     prefix="/workflow-definitions",
@@ -126,7 +126,7 @@ async def view_workflow_definition(
     if isinstance(current_user, RedirectResponse):
         return current_user
 
-    workflow_definition: List[models.WorkflowDefinition] = await service.list_workflow_definitions(
+    workflow_definition: list[models.WorkflowDefinition] = await service.list_workflow_definitions(
         definition_id=definition_id
     )
     if not workflow_definition:

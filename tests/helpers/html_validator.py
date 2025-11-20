@@ -1,4 +1,3 @@
-from typing import Any, Dict
 
 try:
     from bs4 import BeautifulSoup
@@ -49,7 +48,10 @@ def get_form_action(html_content: str, form_index: int = 0) -> str | None:
 def has_form_input(html_content: str, input_name: str) -> bool:
     """Check if HTML form contains input with specific name"""
     if not HAS_BEAUTIFULSOUP:
-        return f'name="{input_name}"' in html_content or f"name='{input_name}'" in html_content
+        return (
+            f'name="{input_name}"' in html_content
+            or f"name='{input_name}'" in html_content
+        )
 
     soup = BeautifulSoup(html_content, 'html.parser')
     inputs = soup.find_all('input', {'name': input_name})

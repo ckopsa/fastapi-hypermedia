@@ -1,13 +1,16 @@
-from typing import Tuple
-
-from fastapi import Depends, Request
 
 from core.html_renderer import HtmlRendererInterface, Jinja2HtmlRenderer
 from core.representor import Representor
 from database import get_db
-from repository import WorkflowDefinitionRepository, WorkflowInstanceRepository, TaskInstanceRepository, \
-    PostgreSQLWorkflowRepository
+from fastapi import Depends, Request
+from repository import (
+    PostgreSQLWorkflowRepository,
+    TaskInstanceRepository,
+    WorkflowDefinitionRepository,
+    WorkflowInstanceRepository,
+)
 from services import WorkflowService
+
 from fastapi_hypermedia.templating import get_templates
 from fastapi_hypermedia.transitions import TransitionManager
 
@@ -16,7 +19,7 @@ def get_html_renderer() -> HtmlRendererInterface:
     return Jinja2HtmlRenderer(get_templates())
 
 
-def get_workflow_repository(db=Depends(get_db)) -> Tuple[
+def get_workflow_repository(db=Depends(get_db)) -> tuple[
     WorkflowDefinitionRepository, WorkflowInstanceRepository, TaskInstanceRepository]:
     """Provides instances of the repository interfaces."""
     repo = PostgreSQLWorkflowRepository(db)
@@ -24,7 +27,7 @@ def get_workflow_repository(db=Depends(get_db)) -> Tuple[
 
 
 def get_workflow_service(
-        repos: Tuple[WorkflowDefinitionRepository, WorkflowInstanceRepository, TaskInstanceRepository] = Depends(
+        repos: tuple[WorkflowDefinitionRepository, WorkflowInstanceRepository, TaskInstanceRepository] = Depends(
             get_workflow_repository)
 ) -> WorkflowService:
     """Provides an instance of the WorkflowService, injecting the repositories."""

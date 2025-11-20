@@ -1,11 +1,23 @@
 # services.py
 import uuid
-from datetime import date as DateObject, datetime, timedelta  # Ensure datetime and timedelta
-from typing import List, Optional, Dict, Any
+from datetime import date as DateObject  # Ensure datetime and timedelta
+from datetime import datetime, timedelta
+from typing import Any
 
 import models
-from models import WorkflowDefinition, WorkflowInstance, TaskInstance, TaskStatus, WorkflowStatus, TaskDefinitionBase
-from repository import WorkflowDefinitionRepository, WorkflowInstanceRepository, TaskInstanceRepository
+from models import (
+    TaskDefinitionBase,
+    TaskInstance,
+    TaskStatus,
+    WorkflowDefinition,
+    WorkflowInstance,
+    WorkflowStatus,
+)
+from repository import (
+    TaskInstanceRepository,
+    WorkflowDefinitionRepository,
+    WorkflowInstanceRepository,
+)
 
 
 class WorkflowService:
@@ -15,14 +27,13 @@ class WorkflowService:
         self.instance_repo = instance_repo
         self.task_repo = task_repo
 
-    async def get_workflow_instance_with_tasks(self, instance_id: str, user_id: str) -> Optional[
-        models.WorkflowInstance]:
+    async def get_workflow_instance_with_tasks(self, instance_id: str, user_id: str) -> models.WorkflowInstance | None:
         instance = await self.instance_repo.get_workflow_instance_by_id(instance_id)
         if not instance or instance.user_id != user_id:
             return None
         return instance
 
-    async def create_workflow_instance(self, instance_data: WorkflowInstance) -> Optional[WorkflowInstance]:
+    async def create_workflow_instance(self, instance_data: WorkflowInstance) -> WorkflowInstance | None:
         definition = await self.definition_repo.get_workflow_definition_by_id(instance_data.workflow_definition_id)
         if not definition:
             return None
@@ -45,7 +56,7 @@ class WorkflowService:
             return None
 
         for task_def in definition.task_definitions:
-            task_due_datetime: Optional[datetime] = None
+            task_due_datetime: datetime | None = None
             if created_instance.due_datetime:
                 if task_def.due_datetime_offset_minutes is not None:
                     offset_minutes = task_def.due_datetime_offset_minutes
@@ -71,11 +82,11 @@ class WorkflowService:
         # We should return this, not the 'new_instance_pydantic' we constructed locally before commit.
         return created_instance
 
-    async def list_workflow_definitions(self, name: Optional[str] = None, definition_id: Optional[str] = None) -> List[
+    async def list_workflow_definitions(self, name: str | None = None, definition_id: str | None = None) -> list[
         WorkflowDefinition]:
         return await self.definition_repo.list_workflow_definitions(name=name, definition_id=definition_id)
 
-    async def complete_task(self, task_id: str, user_id: str) -> Optional[TaskInstance]:
+    async def complete_task(self, task_id: str, user_id: str) -> TaskInstance | None:
         task = await self.task_repo.get_task_instance_by_id(task_id)
         if not task or task.status == models.TaskStatus.completed:
             return task
@@ -98,14 +109,14 @@ class WorkflowService:
                     await self.instance_repo.update_workflow_instance(workflow_instance.id, workflow_instance)
         return updated_task
 
-    async def list_instances_for_user(self, user_id: str, created_at_date: Optional[DateObject] = None,
-                                      status: Optional[WorkflowStatus] = None, definition_id: Optional[str] = None) -> \
-            List[WorkflowInstance]:
+    async def list_instances_for_user(self, user_id: str, created_at_date: DateObject | None = None,
+                                      status: WorkflowStatus | None = None, definition_id: str | None = None) -> \
+            list[WorkflowInstance]:
         return await self.instance_repo.list_workflow_instances_by_user(user_id, created_at_date=created_at_date,
                                                                         status=status, definition_id=definition_id)
 
-    async def create_new_definition(self, name: str, description: Optional[str],
-                                    task_definitions: List[TaskDefinitionBase]) -> WorkflowDefinition:
+    async def create_new_definition(self, name: str, description: str | None,
+                                    task_definitions: list[TaskDefinitionBase]) -> WorkflowDefinition:
         if not name.strip():
             raise ValueError("Definition name cannot be empty.")
         # if not task_definitions:
@@ -123,9 +134,9 @@ class WorkflowService:
             self,
             definition_id: str,
             name: str,
-            description: Optional[str],
-            task_definitions: List[TaskDefinitionBase]
-    ) -> Optional[WorkflowDefinition]:
+            description: str | None,
+            task_definitions: list[TaskDefinitionBase]
+    ) -> WorkflowDefinition | None:
         if not name.strip():
             raise ValueError("Definition name cannot be empty.")
         if not task_definitions:
@@ -136,7 +147,7 @@ class WorkflowService:
         return await self.definition_repo.update_workflow_definition(definition_id, name, description, task_definitions)
 
     async def delete_definition(self, definition_id: str) -> None:
-        from repository import DefinitionNotFoundError, DefinitionInUseError
+        from repository import DefinitionInUseError, DefinitionNotFoundError
         try:
             await self.definition_repo.delete_workflow_definition(definition_id)
         except DefinitionNotFoundError as e:
@@ -144,7 +155,7 @@ class WorkflowService:
         except DefinitionInUseError as e:
             raise ValueError(str(e)) from e
 
-    async def undo_complete_task(self, task_id: str, user_id: str) -> Optional[TaskInstance]:
+    async def undo_complete_task(self, task_id: str, user_id: str) -> TaskInstance | None:
         task = await self.task_repo.get_task_instance_by_id(task_id)
         if not task or task.status != TaskStatus.completed:
             return None
@@ -162,7 +173,7 @@ class WorkflowService:
 
         return updated_task
 
-    async def archive_workflow_instance(self, instance_id: str, user_id: str) -> Optional[WorkflowInstance]:
+    async def archive_workflow_instance(self, instance_id: str, user_id: str) -> WorkflowInstance | None:
         instance = await self.instance_repo.get_workflow_instance_by_id(instance_id)
 
         if not instance:
@@ -185,7 +196,7 @@ class WorkflowService:
         updated_instance = await self.instance_repo.update_workflow_instance(instance.id, instance)
         return updated_instance
 
-    async def unarchive_workflow_instance(self, instance_id: str, user_id: str) -> Optional[WorkflowInstance]:
+    async def unarchive_workflow_instance(self, instance_id: str, user_id: str) -> WorkflowInstance | None:
         instance = await self.instance_repo.get_workflow_instance_by_id(instance_id)
 
         if not instance:
@@ -202,7 +213,7 @@ class WorkflowService:
         updated_instance = await self.instance_repo.update_workflow_instance(instance.id, instance)
         return updated_instance
 
-    async def generate_shareable_link(self, instance_id: str, user_id: str) -> Optional[WorkflowInstance]:
+    async def generate_shareable_link(self, instance_id: str, user_id: str) -> WorkflowInstance | None:
         instance = await self.instance_repo.get_workflow_instance_by_id(instance_id)
 
         if not instance or instance.user_id != user_id:
@@ -226,7 +237,7 @@ class WorkflowService:
         # This assumes update_workflow_instance doesn't change it further or return a different object.
         return updated_instance_pydantic
 
-    async def get_workflow_instance_by_share_token(self, share_token: str) -> Optional[Dict[str, Any]]:
+    async def get_workflow_instance_by_share_token(self, share_token: str) -> dict[str, Any] | None:
         # This assumes instance_repo.get_workflow_instance_by_share_token returns a Pydantic model
         instance = await self.instance_repo.get_workflow_instance_by_share_token(share_token)
 

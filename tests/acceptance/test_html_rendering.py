@@ -8,10 +8,11 @@ from tests.helpers.html_validator import has_html_form, has_html_links
 
 def render_cj_as_html(collection_json):
     """Render Collection+JSON using Jinja2 templates"""
-    templates = templating.get_templates()
+    templating.get_templates()
     # Use the Jinja2 environment to render the template properly with inheritance
-    from jinja2 import Environment, FileSystemLoader
     import importlib.resources
+
+    from jinja2 import Environment, FileSystemLoader
     templates_dir = importlib.resources.files("fastapi_hypermedia.templates")
     env = Environment(loader=FileSystemLoader(str(templates_dir)))
     template = env.get_template("cj_template.html")

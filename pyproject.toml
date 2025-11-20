@@ -9,7 +9,6 @@ description = "A FastAPI extension for building hypermedia APIs with Collection+
 readme = "README.md"
 requires-python = ">=3.10"
 dependencies = [
-    "dominate>=2.9.1",
     "fastapi[all]>=0.115.12",
     "jinja2>=3.1.6",
     "pydantic>=2.11.5",
@@ -32,6 +31,7 @@ app = [
 
 [tool.hatchling]
 packages = ["fastapi_hypermedia"]
+include = ["fastapi_hypermedia/templates/**/*"]
 
 [tool.pytest]
 asyncio_mode = "auto"

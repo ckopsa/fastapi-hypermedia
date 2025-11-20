@@ -2,8 +2,24 @@
 from fastapi import Request
 from fastapi.responses import HTMLResponse
 
-from fastapi_hypermedia import cj_models, html_generator
+from fastapi_hypermedia import cj_models, templating
 from tests.helpers.html_validator import has_html_form, has_html_links
+
+
+def render_cj_as_html(collection_json):
+    """Render Collection+JSON using Jinja2 templates"""
+    templates = templating.get_templates()
+    # Use the Jinja2 environment to render the template properly with inheritance
+    from jinja2 import Environment, FileSystemLoader
+    import importlib.resources
+    templates_dir = importlib.resources.files("fastapi_hypermedia.templates")
+    env = Environment(loader=FileSystemLoader(str(templates_dir)))
+    template = env.get_template("cj_template.html")
+    context = {
+        "collection": collection_json.collection,
+        "template": collection_json.template,
+    }
+    return template.render(**context)
 
 
 def test_developer_can_render_cj_as_html(test_app, test_client, sample_item):
@@ -25,7 +41,7 @@ def test_developer_can_render_cj_as_html(test_app, test_client, sample_item):
         )
         cj_response = cj_models.CollectionJson(collection=collection)
 
-        html_content = html_generator.cj_to_html(cj_response)
+        html_content = render_cj_as_html(cj_response)
         return HTMLResponse(content=html_content)
 
     response = test_client.get("/items/1")
@@ -61,7 +77,7 @@ def test_developer_can_include_forms_in_html_rendering(test_app, test_client):
         )
         cj_response = cj_models.CollectionJson(collection=collection, template=[template])
 
-        html_content = html_generator.cj_to_html(cj_response)
+        html_content = render_cj_as_html(cj_response)
         return HTMLResponse(content=html_content)
 
     response = test_client.get("/items")

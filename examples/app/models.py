@@ -3,7 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, Field
 
-from fastapi_hypermedia import cj_models
+from fastapi_hypermedia.cj_models import HypermediaItem
 
 from .db_models.enums import TaskStatus, WorkflowStatus
 
@@ -21,7 +21,7 @@ __all__ = [
 ]
 
 
-class TaskDefinitionBase(BaseModel):
+class TaskDefinitionBase(HypermediaItem):
     name: str = Field(
         ...,
         description="Name of the task",
@@ -41,14 +41,6 @@ class TaskDefinitionBase(BaseModel):
         json_schema_extra={"x-render-hint": "hidden"},
     )
 
-    def to_cj_data(
-        self,
-        href: str = "",
-        links: list[cj_models.Link] | None = None,
-        rel: str = "item",
-    ) -> cj_models.Item:
-        return cj_models.to_collection_json_data(self, href, links, rel)
-
 
 class TaskInstance(BaseModel):
     id: str = Field(default_factory=lambda: "task_" + str(uuid.uuid4())[:8])
@@ -62,19 +54,11 @@ class TaskInstance(BaseModel):
         from_attributes = True
 
 
-class SimpleTaskInstance(BaseModel):
+class SimpleTaskInstance(HypermediaItem):
     id: str = Field(..., json_schema_extra={"x-render-hint": "hidden"})
     name: str
     order: int = Field(..., json_schema_extra={"x-render-hint": "hidden"})
     status: TaskStatus = TaskStatus.pending
-
-    def to_cj_data(
-        self,
-        href: str = "",
-        links: list[cj_models.Link] | None = None,
-        rel: str = "item",
-    ) -> cj_models.Item:
-        return cj_models.to_collection_json_data(self, href, links, rel)
 
     @staticmethod
     def from_task_instance(task_instance: TaskInstance) -> "SimpleTaskInstance":
@@ -86,7 +70,7 @@ class SimpleTaskInstance(BaseModel):
         )
 
 
-class WorkflowInstance(BaseModel):
+class WorkflowInstance(HypermediaItem):
     id: str = Field(
         default_factory=lambda: "wf_" + str(uuid.uuid4())[:8],
         json_schema_extra={"x-render-hint": "hidden"},
@@ -106,19 +90,11 @@ class WorkflowInstance(BaseModel):
         default_factory=list, json_schema_extra={"x-render-hint": "hidden"}
     )
 
-    def to_cj_data(
-        self,
-        href: str = "",
-        links: list[cj_models.Link] | None = None,
-        rel: str = "item",
-    ) -> cj_models.Item:
-        return cj_models.to_collection_json_data(self, href, links, rel)
-
     class Config:
         from_attributes = True
 
 
-class WorkflowDefinition(BaseModel):
+class WorkflowDefinition(HypermediaItem):
     id: str = Field(
         default_factory=lambda: "def_" + str(uuid.uuid4())[:8],
         json_schema_extra={"x-render-hint": "hidden"},
@@ -131,14 +107,6 @@ class WorkflowDefinition(BaseModel):
     due_datetime: datetime | None = Field(
         None, json_schema_extra={"x-render-hint": "hidden"}
     )
-
-    def to_cj_data(
-        self,
-        href: str = "",
-        links: list[cj_models.Link] | None = None,
-        rel: str = "item",
-    ) -> cj_models.Item:
-        return cj_models.to_collection_json_data(self, href, links, rel)
 
     class Config:
         from_attributes = True

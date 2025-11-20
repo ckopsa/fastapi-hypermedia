@@ -30,8 +30,8 @@ def test_developer_can_render_cj_as_html(test_app, test_client, sample_item):
 
     @test_app.get("/items/{item_id}", response_class=HTMLResponse)
     async def get_item_html(item_id: int):
-        cj_item = sample_item.to_cj_data(
-            href=f"http://example.com/items/{sample_item.id}"
+        cj_item = cj_models.model_to_item(
+            sample_item, href=f"http://example.com/items/{sample_item.id}"
         )
 
         collection = cj_models.Collection(

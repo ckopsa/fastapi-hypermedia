@@ -20,7 +20,9 @@ def test_developer_can_return_collection_json_response(
             title="Items Collection",
             links=[],
             items=[
-                item.to_cj_data(href=f"http://example.com/items/{item.id}")
+                cj_models.model_to_item(
+                    item, href=f"http://example.com/items/{item.id}"
+                )
                 for item in sample_items
             ],
         )
@@ -89,7 +91,9 @@ def test_developer_can_convert_domain_models_to_cj_items(
         # Simulate fetching item
         item = sample_item
 
-        cj_item = item.to_cj_data(href=f"http://example.com/items/{item.id}")
+        cj_item = cj_models.model_to_item(
+            item, href=f"http://example.com/items/{item.id}"
+        )
         collection = cj_models.Collection(
             href=f"http://example.com/items/{item_id}",
             title="Single Item",

@@ -1,7 +1,10 @@
-.PHONY: install lint format test check clean
+.PHONY: install dev lint format test check clean
 
 install:
 	uv sync --extra dev
+
+dev:
+	cd examples/app && uv run fastapi dev main.py
 
 lint:
 	uv run ruff check .

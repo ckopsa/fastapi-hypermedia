@@ -1,0 +1,465 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title | default('Hyper-WIMP Interface') }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* --- HYPER-WIMP CORE STYLES --- */
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;400;700&display=swap');
+
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff00aa;
+            --neon-green: #0aff0a;
+            --glass-bg: rgba(15, 23, 42, 0.6);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: #020204;
+            background-image: linear-gradient(rgba(0, 243, 255, 0.03) 1px, transparent 1px),
+            linear-gradient(90deg, rgba(0, 243, 255, 0.03) 1px, transparent 1px);
+            background-size: 30px 30px;
+            color: #e2e8f0;
+            font-family: 'JetBrains Mono', monospace;
+            overflow: hidden; /* ZUI requires no scroll on body */
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* --- GLASS PANELS --- */
+        .glass-panel {
+            background: var(--glass-bg);
+            backdrop-filter: blur(12px);
+            border: 1px solid var(--glass-border);
+            border-left: 3px solid var(--neon-cyan);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.5);
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        }
+
+        .glass-panel:hover {
+            box-shadow: 0 0 15px rgba(0, 243, 255, 0.15);
+            border-color: rgba(0, 243, 255, 0.5);
+            transform: translateY(-2px);
+        }
+
+        /* --- GRID WORKSPACE --- */
+        #workspace {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+            grid-auto-rows: 240px;
+            gap: 1.5rem;
+            padding: 5rem 2rem 2rem 2rem;
+            height: 100vh;
+            overflow-y: auto;
+        }
+
+        /* --- ZUI ZOOM STATES --- */
+        .tile {
+            position: relative;
+            cursor: pointer;
+            overflow: hidden;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .tile.zoomed {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            z-index: 50;
+            background: rgba(5, 5, 5, 0.98);
+            border: none;
+            border-left: 5px solid var(--neon-pink);
+            padding: 4rem 10vw;
+            cursor: default;
+            transform: none !important;
+            overflow-y: auto;
+        }
+
+        .tile.zoomed .tile-summary {
+            display: none;
+        }
+
+        .tile.zoomed .tile-full-content {
+            display: block;
+            animation: fadeIn 0.5s ease forwards;
+        }
+
+        .tile-full-content {
+            display: none;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        /* --- HUD (FORMS) --- */
+        #hud-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.85);
+            backdrop-filter: blur(8px);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 100;
+            opacity: 0;
+            pointer-events: none;
+            transition: 0.2s;
+        }
+
+        #hud-overlay.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .hud-box {
+            width: 800px;
+            max-height: 80vh;
+            overflow-y: auto;
+            background: #0f172a;
+            border: 1px solid var(--neon-pink);
+            box-shadow: 0 0 40px rgba(255, 0, 170, 0.2);
+        }
+
+        /* --- FORM INPUT STYLING --- */
+        .cyber-input {
+            background: rgba(0, 0, 0, 0.3);
+            border: 1px solid #334155;
+            color: var(--neon-cyan);
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        .cyber-input:focus {
+            border-color: var(--neon-pink);
+            outline: none;
+            box-shadow: 0 0 10px rgba(255, 0, 170, 0.2);
+        }
+
+        /* --- SCROLLBAR HIDE --- */
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+
+        ::-webkit-scrollbar-track {
+            background: transparent;
+        }
+
+        ::-webkit-scrollbar-thumb {
+            background: #334155;
+        }
+
+    </style>
+</head>
+<body>
+
+<!-- HEADER (METADATA) -->
+<div class="fixed top-0 left-0 w-full h-16 flex items-center justify-between px-6 z-40 bg-black/60 backdrop-blur-sm border-b border-white/10">
+    <div>
+        <div class="text-xs text-gray-500">COLLECTION</div>
+        <div class="text-xl font-bold text-cyan-400 tracking-widest">
+            {% if collection %}
+                <a href="{{ collection.href }}">{{ collection.title | default('DATA_GRID') }}</a>
+            {% else %}
+                NO_DATA_SIGNAL
+            {% endif %}
+        </div>
+    </div>
+    <div class="flex items-center space-x-4">
+        <!-- Collection Links (Top Right) -->
+        {% if collection and collection.links %}
+            {% for link in collection.links %}
+                <a href="{{ link.href }}"
+                   class="text-xs border border-gray-700 px-3 py-1 hover:bg-cyan-500/20 hover:text-cyan-400 transition">
+                    {{ link.prompt | default(link.rel) | upper }}
+                </a>
+            {% endfor %}
+        {% endif %}
+    </div>
+</div>
+
+<!-- HINT FOOTER -->
+<div class="fixed bottom-5 right-5 text-xs text-gray-600 z-40">
+    [L-CLICK] EXAMINE TILE &nbsp;|&nbsp; [SPACE] COMMAND_HUD
+</div>
+
+<!-- MAIN CONTENT BLOCK -->
+{% block content %}
+
+    <!-- MACRO FOR INPUTS (Styled for Cyberpunk) -->
+    {% macro render_input(data_item, id_prefix) %}
+        <div class="mb-4" {% if data_item.render_hint == 'hidden' %}hidden{% endif %}>
+            <label for="{{ id_prefix }}_{{ data_item.name }}"
+                   class="block mb-1 text-xs text-gray-400 uppercase tracking-wider">
+                {{ data_item.prompt | default(data_item.name) }}
+            </label>
+
+            {% if data_item.input_type == 'select' and data_item.options %}
+                <select id="{{ id_prefix }}_{{ data_item.name }}" name="{{ data_item.name }}"
+                        class="cyber-input w-full p-2 rounded-sm">
+                    {% for option_val in data_item.options %}
+                        <option value="{{ option_val }}"
+                                {% if option_val==data_item.value %}selected{% endif %}>{{ option_val }}</option>
+                    {% endfor %}
+                </select>
+
+            {% elif data_item.input_type == 'textarea' or data_item.render_hint == 'textarea' %}
+                <textarea id="{{ id_prefix }}_{{ data_item.name }}" name="{{ data_item.name }}" rows="3"
+                          class="cyber-input w-full p-2 rounded-sm">{{ data_item.value | default('') }}</textarea>
+
+            {% else %}
+                <input type="{{ data_item.input_type | default('text') }}"
+                       id="{{ id_prefix }}_{{ data_item.name }}" name="{{ data_item.name }}"
+                       value="{{ data_item.value | default('') }}"
+                       class="cyber-input w-full p-2 rounded-sm">
+            {% endif %}
+        </div>
+    {% endmacro %}
+
+    <!-- GRID WORKSPACE -->
+    <div id="workspace">
+        {% if collection and collection.items %}
+            {% for item in collection.items %}
+
+                <!-- TILE START -->
+                <div class="tile glass-panel p-6" onclick="zoomTile(this)">
+
+                    <!-- 1. TILE HEADER -->
+                    <div class="tile-summary h-full flex flex-col relative">
+                        <div class="flex justify-between items-start mb-4 border-b border-white/10 pb-2">
+                            <span class="text-xs text-gray-500 font-mono">ID: {{ loop.index }}</span>
+                            <!-- Try to find a status field for color coding -->
+                            {% set status = item.data | selectattr("name", "equalto", "status") | map(attribute="value") | first %}
+                            {% if status %}
+                                <span class="text-[10px] px-2 py-0.5 border border-cyan-900 text-cyan-400">{{ status }}</span>
+                            {% endif %}
+                        </div>
+
+                        <!-- Try to find title/description for summary -->
+                        {% set title = item.data | selectattr("name", "equalto", "name") | map(attribute="value") | first %}
+                        {% set desc = item.data | selectattr("name", "equalto", "description") | map(attribute="value") | first %}
+
+                        <h3 class="text-xl font-bold text-gray-100 mb-2 glitch">
+                            {{ title | default('UNTITLED_ITEM') }}
+                        </h3>
+
+                        <p class="text-sm text-gray-400 line-clamp-3 font-sans opacity-80">
+                            {{ desc | default('No preview data available.') }}
+                        </p>
+
+                        <div class="mt-auto pt-4 flex justify-end">
+                            <i class="fas fa-expand-alt text-cyan-500 opacity-50 group-hover:opacity-100"></i>
+                        </div>
+                    </div>
+
+                    <!-- 2. FULL CONTENT (ZUI EXPANDED) -->
+                    <div class="tile-full-content">
+                        <!-- Zoom Header -->
+                        <div class="flex items-center justify-between mb-8 border-b border-gray-800 pb-4">
+                            <button onclick="event.stopPropagation(); unzoomTile(this.closest('.tile'))"
+                                    class="border border-cyan-500 text-cyan-500 px-6 py-2 hover:bg-cyan-500 hover:text-black transition">
+                                <i class="fas fa-arrow-left mr-2"></i> RETURN_TO_GRID
+                            </button>
+                            <div class="text-2xl font-bold text-white">{{ title | default('ITEM_DETAILS') }}</div>
+                        </div>
+
+                        <!-- Data Loop -->
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                            <div class="prose prose-invert max-w-none">
+                                <h4 class="text-pink-500 border-b border-pink-900/30 mb-4 pb-1">DATA_PAYLOAD</h4>
+                                {% if item.data %}
+                                    <dl class="space-y-4">
+                                        {% for data_point in item.data %}
+                                            <div {% if data_point.render_hint == 'hidden' %}hidden{% endif %}>
+                                                <dt class="text-xs text-gray-500 uppercase">{{ data_point.prompt or data_point.name }}</dt>
+                                                <dd class="text-lg text-gray-200 font-mono border-l-2 border-gray-700 pl-3 mt-1">
+                                                    {{ data_point.value }}
+                                                </dd>
+                                            </div>
+                                        {% endfor %}
+                                    </dl>
+                                {% endif %}
+                            </div>
+
+                            <!-- Action/Links Section -->
+                            <div>
+                                <h4 class="text-cyan-500 border-b border-cyan-900/30 mb-4 pb-1">EXECUTABLES</h4>
+                                {% if item.links %}
+                                    <div class="flex flex-col space-y-3">
+                                        {% for link in item.links %}
+                                            {% if link.method == "GET" %}
+                                                <a href="{{ link.href }}"
+                                                   class="block p-4 border border-gray-700 hover:border-cyan-400 hover:bg-cyan-900/10 transition group">
+                                                    <div class="flex justify-between items-center">
+                                                        <span class="text-gray-300 group-hover:text-white">{{ link.prompt | default(link.rel) }}</span>
+                                                        <i class="fas fa-external-link-alt text-gray-600 group-hover:text-cyan-400"></i>
+                                                    </div>
+                                                </a>
+                                            {% else %}
+                                                <form action="{{ link.href }}" method="{{ link.method }}">
+                                                    <button type="submit"
+                                                            class="w-full text-left p-4 border border-gray-700 hover:border-pink-400 hover:bg-pink-900/10 transition group">
+                                                        <div class="flex justify-between items-center">
+                                                            <span class="text-gray-300 group-hover:text-white">{{ link.prompt | default(link.rel) }}</span>
+                                                            <span class="text-xs bg-gray-800 px-2 py-1 rounded text-pink-500">{{ link.method }}</span>
+                                                        </div>
+                                                    </button>
+                                                </form>
+                                            {% endif %}
+                                        {% endfor %}
+                                    </div>
+                                {% else %}
+                                    <div class="text-gray-600 italic">// NO_ACTIONS_AVAILABLE</div>
+                                {% endif %}
+                            </div>
+                        </div>
+                    </div>
+                    <!-- END FULL CONTENT -->
+                </div>
+                <!-- TILE END -->
+            {% endfor %}
+        {% else %}
+            <div class="col-span-3 text-center text-gray-500 mt-20">
+                <i class="fas fa-exclamation-triangle text-4xl mb-4"></i><br>
+                NO COLLECTION DATA FOUND
+            </div>
+        {% endif %}
+    </div>
+
+    <!-- HUD OVERLAY (QUERIES & TEMPLATES) -->
+    <div id="hud-overlay">
+        <div class="hud-box">
+            <!-- HUD Header -->
+            <div class="flex justify-between items-center bg-gray-900 p-4 border-b border-pink-500/30">
+                <div class="text-pink-500 font-bold tracking-wider"><i class="fas fa-terminal mr-2"></i>COMMAND_INTERFACE
+                </div>
+                <div class="text-xs text-gray-500">ESC to CLOSE</div>
+            </div>
+
+            <div class="p-8">
+                <!-- 1. SEARCH / QUERIES -->
+                {% if collection and collection.queries %}
+                    <div class="mb-8">
+                        <h3 class="text-white mb-4 text-sm uppercase border-b border-gray-700 pb-1">Search
+                            Protocols</h3>
+                        <div class="grid gap-4">
+                            {% for query in collection.queries %}
+                                <form action="{{ query.href }}" method="{{ query.method | default('GET') }}"
+                                      class="flex items-end gap-2">
+                                    <!-- We render inputs inline for the HUD -->
+                                    {% if query.data %}
+                                        {% for data_item in query.data %}
+                                            <div class="flex-grow">
+                                                <label class="text-[10px] text-gray-500 block mb-1">{{ data_item.prompt }}</label>
+                                                <input type="text" name="{{ data_item.name }}"
+                                                       class="cyber-input w-full p-2" placeholder="...">
+                                            </div>
+                                        {% endfor %}
+                                    {% endif %}
+                                    <button type="submit"
+                                            class="bg-cyan-600 hover:bg-cyan-500 text-white px-4 py-2 h-[38px]">
+                                        <i class="fas fa-search"></i>
+                                    </button>
+                                </form>
+                            {% endfor %}
+                        </div>
+                    </div>
+                {% endif %}
+
+                <!-- 2. TEMPLATES (Create Actions) -->
+                {% if template %}
+                    <div>
+                        <h3 class="text-white mb-4 text-sm uppercase border-b border-gray-700 pb-1">Write
+                            Operations</h3>
+                        {% for tmpl in template %}
+                            <div class="border border-gray-700 p-4 bg-black/20 mb-4">
+                                <form action="{{ tmpl.href }}" method="{{ tmpl.method }}">
+                                    <div class="text-pink-400 text-xs mb-3 font-bold">{{ tmpl.prompt | default('NEW_ENTRY') }}</div>
+                                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
+                                        {% for data_item in tmpl.data %}
+                                            {{ render_input(data_item, "tmpl_" ~ loop.index) }}
+                                        {% endfor %}
+                                    </div>
+                                    <button type="submit"
+                                            class="w-full border border-pink-500 text-pink-500 py-2 hover:bg-pink-500 hover:text-black transition uppercase text-sm font-bold">
+                                        Execute
+                                    </button>
+                                </form>
+                            </div>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+
+{% endblock %}
+
+<!-- INTERACTION SCRIPTS -->
+<script>
+    /* --- ZUI LOGIC --- */
+
+    // Function to OPEN a tile (Zoom In)
+    function zoomTile(tile) {
+        // If already zoomed, ignore click (prevents conflict with inner interactions)
+        if (tile.classList.contains('zoomed')) return;
+
+        // Unzoom any other currently zoomed tile (safety check)
+        const existing = document.querySelector('.tile.zoomed');
+        if (existing) unzoomTile(existing);
+
+        // Zoom the clicked tile
+        tile.classList.add('zoomed');
+        document.body.style.overflow = 'hidden'; // Prevent background scroll
+    }
+
+    // Function to CLOSE a tile (Return to Grid)
+    function unzoomTile(tile) {
+        if (!tile) return;
+        tile.classList.remove('zoomed');
+        document.body.style.overflow = 'auto';
+    }
+
+    /* --- HUD LOGIC --- */
+    const hud = document.getElementById('hud-overlay');
+
+    document.addEventListener('keydown', (e) => {
+        if (e.code === 'Space' && !e.target.matches('input, textarea')) {
+            e.preventDefault();
+            hud.classList.add('active');
+        }
+        if (e.code === 'Escape') {
+            hud.classList.remove('active');
+
+            // Also close zoomed tile on Escape
+            const zoomed = document.querySelector('.tile.zoomed');
+            if (zoomed) {
+                unzoomTile(zoomed);
+            }
+        }
+    });
+
+    hud.addEventListener('click', (e) => {
+        if (e.target === hud) {
+            hud.classList.remove('active');
+        }
+    });
+</script>
+</body>
+</html>

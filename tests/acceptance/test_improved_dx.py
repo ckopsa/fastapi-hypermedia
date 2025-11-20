@@ -38,21 +38,23 @@ def test_improved_dx_usage(test_app, test_client):
 
 def test_queries_and_templates_dx(test_app, test_client):
     @test_app.get("/search", name="search_items", tags=["search"])
-    async def search_items(q: str, request: Request, hm: Hypermedia = Depends(Hypermedia)):
+    async def search_items(
+        q: str, request: Request, hm: Hypermedia = Depends(Hypermedia)
+    ):
         return hm.create_collection_response(
-            title="Search Results",
-            queries=[("search_items", "search")]
+            title="Search Results", queries=[("search_items", "search")]
         )
 
     @test_app.post("/items", name="create_item", tags=["items"])
-    async def create_item(item: dict, request: Request, hm: Hypermedia = Depends(Hypermedia)):
+    async def create_item(
+        item: dict, request: Request, hm: Hypermedia = Depends(Hypermedia)
+    ):
         return {}
 
     @test_app.get("/root", name="root")
     async def root(request: Request, hm: Hypermedia = Depends(Hypermedia)):
         return hm.create_collection_response(
-            title="Root",
-            templates=[("create_item", "create")]
+            title="Root", templates=[("create_item", "create")]
         )
 
     # Test Query
@@ -78,7 +80,7 @@ def test_string_references(test_app, test_client):
             title="Simple",
             links=["simple_link"],
             queries=["simple_link"],
-            templates=["simple_link"]
+            templates=["simple_link"],
         )
 
     response = test_client.get("/simple")

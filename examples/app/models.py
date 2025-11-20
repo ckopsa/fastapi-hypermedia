@@ -42,7 +42,10 @@ class TaskDefinitionBase(BaseModel):
     )
 
     def to_cj_data(
-        self, href: str = "", links: list[cj_models.Link] | None = None, rel: str = "item"
+        self,
+        href: str = "",
+        links: list[cj_models.Link] | None = None,
+        rel: str = "item",
     ) -> cj_models.Item:
         return cj_models.to_collection_json_data(self, href, links, rel)
 
@@ -66,7 +69,10 @@ class SimpleTaskInstance(BaseModel):
     status: TaskStatus = TaskStatus.pending
 
     def to_cj_data(
-        self, href: str = "", links: list[cj_models.Link] | None = None, rel: str = "item"
+        self,
+        href: str = "",
+        links: list[cj_models.Link] | None = None,
+        rel: str = "item",
     ) -> cj_models.Item:
         return cj_models.to_collection_json_data(self, href, links, rel)
 
@@ -101,7 +107,10 @@ class WorkflowInstance(BaseModel):
     )
 
     def to_cj_data(
-        self, href: str = "", links: list[cj_models.Link] | None = None, rel: str = "item"
+        self,
+        href: str = "",
+        links: list[cj_models.Link] | None = None,
+        rel: str = "item",
     ) -> cj_models.Item:
         return cj_models.to_collection_json_data(self, href, links, rel)
 
@@ -124,7 +133,10 @@ class WorkflowDefinition(BaseModel):
     )
 
     def to_cj_data(
-        self, href: str = "", links: list[cj_models.Link] | None = None, rel: str = "item"
+        self,
+        href: str = "",
+        links: list[cj_models.Link] | None = None,
+        rel: str = "item",
     ) -> cj_models.Item:
         return cj_models.to_collection_json_data(self, href, links, rel)
 

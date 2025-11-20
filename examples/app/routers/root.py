@@ -5,11 +5,11 @@ from typing import Any
 from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from fastapi_hypermedia import cj_models, transitions
+from fastapi_hypermedia import Hypermedia
 
 from ..core.representor import Representor
 from ..core.security import AuthenticatedUser, get_current_user
-from ..dependencies import get_representor, get_transition_registry
+from ..dependencies import get_hypermedia, get_representor
 
 router = APIRouter()
 
@@ -34,9 +34,7 @@ async def healthcheck() -> dict[str, str]:
 async def home(
     request: Request,
     current_user: AuthenticatedUser | None = Depends(get_current_user),
-    transition_manager: transitions.TransitionManager = Depends(
-        get_transition_registry
-    ),
+    hypermedia: Hypermedia = Depends(get_hypermedia),
     representor: Representor = Depends(get_representor),
 ) -> Any:
     """Serves the homepage."""
@@ -44,27 +42,12 @@ async def home(
         return current_user
 
     return await representor.represent(
-        cj_models.CollectionJson(
-            collection=(
-                cj_models.Collection(
-                    href=str(request.url),
-                    title="Home",
-                    links=[
-                        t.to_link()
-                        for t in [
-                            transition_manager.get_transition("home", {}),
-                            transition_manager.get_transition(
-                                "get_workflow_definitions", {}
-                            ),
-                            transition_manager.get_transition(
-                                "get_workflow_instances", {}
-                            ),
-                        ]
-                        if t
-                    ],
-                )
-            ),
-            template=[],
-            error=None,
+        hypermedia.create_collection_json(
+            title="Home",
+            links=[
+                "home",
+                "get_workflow_definitions",
+                "get_workflow_instances",
+            ],
         )
     )

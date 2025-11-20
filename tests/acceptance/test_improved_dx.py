@@ -1,3 +1,4 @@
+import pytest
 from fastapi import Depends, Request
 from pydantic import BaseModel
 
@@ -92,3 +93,65 @@ def test_string_references(test_app, test_client):
 
     assert len(data["template"]) == 1
     assert data["template"][0]["rel"] == "simple"
+
+
+def test_parameterized_links_and_functions(test_app, test_client):
+    @test_app.get("/items/{item_id}", name="read_item")
+    def read_item(item_id: int):
+        return {"item_id": item_id}
+
+    @test_app.get("/users/{user_id}/posts/{post_id}", name="read_post")
+    def read_post(user_id: int, post_id: int):
+        return {"user_id": user_id, "post_id": post_id}
+
+    @test_app.get("/", name="root")
+    def root(request: Request, hm: Hypermedia = Depends(Hypermedia)):
+        return hm.create_collection_response(
+            title="Test API",
+            links=[
+                "root",
+                ("read_item", {"item_id": 1}),
+                (read_item, {"item_id": 2}),
+                (read_post, "my_post", {"user_id": 10, "post_id": 20}),
+            ]
+        )
+
+    response = test_client.get("/")
+    assert response.status_code == 200
+    data = response.json()
+    links = data["collection"]["links"]
+
+    def find_link(href_part):
+        return next((l for l in links if href_part in l["href"]), None)
+
+    # 2. ("read_item", {"item_id": 1}) -> href: .../items/1
+    link_item_1 = find_link("/items/1")
+    assert link_item_1 is not None
+
+    # 3. (read_item, {"item_id": 2}) -> href: .../items/2
+    link_item_2 = find_link("/items/2")
+    assert link_item_2 is not None
+
+    # 4. (read_post, "my_post", {"user_id": 10, "post_id": 20})
+    link_post = find_link("/users/10/posts/20")
+    assert link_post is not None
+    assert link_post["rel"] == "my_post"
+
+
+def test_missing_params_error(test_app, test_client):
+    @test_app.get("/items/{item_id}", name="read_item")
+    def read_item(item_id: int):
+        return {"item_id": item_id}
+
+    @test_app.get("/fail")
+    def fail_endpoint(hm: Hypermedia = Depends(Hypermedia)):
+        return hm.create_collection_response(
+            title="Fail",
+            links=[read_item]  # Missing item_id
+        )
+
+    with pytest.raises(KeyError) as excinfo:
+        test_client.get("/fail")
+
+    assert "Missing parameter" in str(excinfo.value)
+    assert "item_id" in str(excinfo.value)

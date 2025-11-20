@@ -55,12 +55,13 @@
 
 {% if collection %}
 <div class="collection p-4">
-    <h1 class="text-gray-100 text-3xl mb-5">
+    <h1 class="text-gray-100 text-3xl mb-5">Domestic</h1>
+    <h2 class="text-gray-100 text-2xl mb-5">
         <a href="{{ collection.href }}" rel="self"
            class="text-purple-400 hover:text-orange-400 hover:underline transition-colors duration-200">
             {{ collection.title | default('Collection') }}
         </a>
-    </h1>
+    </h2>
 
     {% if collection.links %}
     <div class="links mb-4">

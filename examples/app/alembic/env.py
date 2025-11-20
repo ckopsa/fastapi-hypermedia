@@ -22,13 +22,7 @@ from alembic import context
 # access to the values within the .ini file in use.
 config = context.config
 
-# Set the sqlalchemy.url from environment variables
-db_user = os.getenv("DB_USER", "user")
-db_pass = os.getenv("DB_PASS", "password")
-db_host = os.getenv("DB_HOST", "localhost")
-db_port = os.getenv("DB_PORT", "5432")
-db_name = os.getenv("DB_NAME", "checklist_db")
-config.set_main_option("sqlalchemy.url", f"postgresql://{db_user}:{db_pass}@{db_host}:{db_port}/{db_name}")
+
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.
@@ -37,7 +31,7 @@ if config.config_file_name is not None:
 
 # add your model's MetaData object here
 # for 'autogenerate' support
-from src.db_models import Base
+from db_models import Base
 target_metadata = Base.metadata
 
 # other values from the config, defined by the needs of env.py,

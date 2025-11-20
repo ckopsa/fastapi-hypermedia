@@ -4,8 +4,10 @@ from fastapi import FastAPI
 from fastapi.staticfiles import StaticFiles
 from uvicorn.middleware.proxy_headers import ProxyHeadersMiddleware
 
-from routers import root, auth, workflow_definitions
+from routers import root, workflow_definitions
 from routers import workflow_instances as workflow_instances_router
+
+from config import USE_DOMINATE
 
 
 def generate_unique_id(route: "APIRoute") -> str:
@@ -21,6 +23,5 @@ app.add_middleware(ProxyHeadersMiddleware, trusted_hosts="*")
 
 # Include routers
 app.include_router(root.router)
-app.include_router(auth.router)
 app.include_router(workflow_definitions.router)
 app.include_router(workflow_instances_router.router)

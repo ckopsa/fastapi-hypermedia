@@ -41,4 +41,5 @@ uvicorn main:app --reload
 
 - Collection+JSON model definitions
 - Hypermedia transitions
-- Templating support for HTML rendering
+- Programmatic HTML generation using dominate
+- Templating support for HTML rendering (alternative)

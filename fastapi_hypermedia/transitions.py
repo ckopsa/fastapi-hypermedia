@@ -1,8 +1,10 @@
 import datetime
 import enum
+from collections.abc import Callable
 from typing import Any
 
 from fastapi import Request
+from fastapi.routing import APIRoute
 from pydantic import BaseModel
 from pydantic.types import StrictBool
 
@@ -106,14 +108,31 @@ class TransitionManager:
 
         if not hasattr(request.app.state, "hypermedia_routes_info"):
             request.app.state.hypermedia_routes_info = {}
+            request.app.state.hypermedia_functions_map = {}
             self._load_routes_from_schema(request)
 
         self.routes_info: dict[str, Form] = request.app.state.hypermedia_routes_info
+        self.functions_map: dict[Callable[..., Any], str] = (
+            request.app.state.hypermedia_functions_map
+        )
 
     def _load_routes_from_schema(self, request: Request) -> None:
         """
         Parses the OpenAPI schema to build an internal cache of route information.
         """
+        # Map functions to operation IDs
+        for route in request.app.routes:
+            if isinstance(route, APIRoute):
+                op_id = route.operation_id
+                if not op_id and hasattr(
+                    request.app.router, "generate_unique_id_function"
+                ):
+                    # FastAPI stores generate_unique_id_function in the router
+                    op_id = request.app.router.generate_unique_id_function(route)
+
+                if op_id:
+                    request.app.state.hypermedia_functions_map[route.endpoint] = op_id
+
         schema = request.app.openapi()
         for path, path_item in schema.get("paths", {}).items():
             for method, operation in path_item.items():
@@ -284,20 +303,34 @@ class TransitionManager:
                 )
 
     def get_transition(
-        self, transition_name: str, context: dict[str, str]
+        self, transition_name: str | Callable[..., Any], context: dict[str, str]
     ) -> Form | None:
         """
         Retrieves a transition (route) by its operation ID and formats its URL with the provided context.
 
         Args:
-            transition_name: The operation ID of the route.
+            transition_name: The operation ID of the route, or the endpoint function.
             context: A dictionary of values to format the URL path parameters.
 
         Returns:
             A Form object representing the transition, or None if not found.
         """
-        form = self.routes_info.get(transition_name)
+        lookup_name: str | None = None
+        if isinstance(transition_name, str):
+            lookup_name = transition_name
+        else:
+            lookup_name = self.functions_map.get(transition_name)
+
+        if not lookup_name:
+            return None
+
+        form = self.routes_info.get(lookup_name)
         if form is not None:
             form = form.model_copy(deep=True)
-            form.href = form.href.format(**context)
+            try:
+                form.href = form.href.format(**context)
+            except KeyError as e:
+                raise KeyError(
+                    f"Missing parameter {e} for route '{transition_name}' with href '{form.href}'"
+                ) from e
         return form

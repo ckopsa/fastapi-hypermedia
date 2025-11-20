@@ -24,9 +24,12 @@ class Hypermedia:
         href: str | None = None,
         items: Sequence[BaseModel | Item | Any] | None = None,
         item_href: Callable[[Any], str] | None = None,
-        links: Sequence[str | Link | tuple[str, str]] | None = None,
-        queries: Sequence[str | Query | tuple[str, str]] | None = None,
-        templates: Sequence[str | Template | tuple[str, str]] | None = None,
+        links: Sequence[str | Link | tuple[Any, ...] | Callable[..., Any]]
+        | None = None,
+        queries: Sequence[str | Query | tuple[Any, ...] | Callable[..., Any]]
+        | None = None,
+        templates: Sequence[str | Template | tuple[Any, ...] | Callable[..., Any]]
+        | None = None,
         error: Any = None,
     ) -> CollectionResponse:
         """
@@ -63,9 +66,9 @@ class Hypermedia:
         href: str | None = None,
         items: Sequence[BaseModel | Item | Any] | None = None,
         item_href: Callable[[Any], str] | None = None,
-        links: Sequence[str | Link | tuple[str, str]] | None = None,
-        queries: Sequence[str | Query | tuple[str, str]] | None = None,
-        templates: Sequence[str | Template | tuple[str, str]] | None = None,
+        links: Sequence[str | Link | tuple[Any, ...] | Callable[..., Any]] | None = None,
+        queries: Sequence[str | Query | tuple[Any, ...] | Callable[..., Any]] | None = None,
+        templates: Sequence[str | Template | tuple[Any, ...] | Callable[..., Any]] | None = None,
         error: Any = None,
     ) -> CollectionJson:
         """
@@ -122,60 +125,69 @@ class Hypermedia:
         return cj_items
 
     def _process_links(
-        self, links: Sequence[str | Link | tuple[str, str]]
+        self, links: Sequence[str | Link | tuple[Any, ...] | Callable[..., Any]]
     ) -> list[Link]:
         cj_links: list[Link] = []
         for link in links:
             if isinstance(link, Link):
                 cj_links.append(link)
-            elif isinstance(link, str):
-                # Assume route name, use default rel (which is usually from tags or empty)
-                transition = self.tm.get_transition(link, {})
-                if transition:
-                    cj_links.append(transition.to_link())
-            elif isinstance(link, tuple):
-                name, rel = link
-                transition = self.tm.get_transition(name, {})
+            else:
+                transition, rel = self._resolve_transition(link)
                 if transition:
                     cj_links.append(transition.to_link(rel=rel))
         return cj_links
 
     def _process_queries(
-        self, queries: Sequence[str | Query | tuple[str, str]]
+        self, queries: Sequence[str | Query | tuple[Any, ...] | Callable[..., Any]]
     ) -> list[Query]:
         cj_queries: list[Query] = []
         for query in queries:
             if isinstance(query, Query):
                 cj_queries.append(query)
-            elif isinstance(query, str):
-                transition = self.tm.get_transition(query, {})
-                if transition:
-                    cj_queries.append(transition.to_query())
-            elif isinstance(query, tuple):
-                name, rel = query
-                transition = self.tm.get_transition(name, {})
+            else:
+                transition, rel = self._resolve_transition(query)
                 if transition:
                     q = transition.to_query()
-                    q.rel = rel
+                    if rel:
+                        q.rel = rel
                     cj_queries.append(q)
         return cj_queries
 
     def _process_templates(
-        self, templates: Sequence[str | Template | tuple[str, str]]
+        self, templates: Sequence[str | Template | tuple[Any, ...] | Callable[..., Any]]
     ) -> list[Template]:
         cj_templates: list[Template] = []
         for template in templates:
             if isinstance(template, Template):
                 cj_templates.append(template)
-            elif isinstance(template, str):
-                transition = self.tm.get_transition(template, {})
-                if transition:
-                    cj_templates.append(transition.to_template())
-            elif isinstance(template, tuple):
-                name, rel = template
-                transition = self.tm.get_transition(name, {})
+            else:
+                transition, rel = self._resolve_transition(template)
                 if transition:
                     t = transition.to_template()
-                    t.rel = rel
+                    if rel:
+                        t.rel = rel
                     cj_templates.append(t)
         return cj_templates
+
+    def _resolve_transition(self, arg: Any) -> tuple[Any, str | None]:
+        name: str | Callable[..., Any]
+        rel: str | None = None
+        params: dict[str, Any] = {}
+
+        if isinstance(arg, str) or callable(arg):
+            name = arg
+        elif isinstance(arg, tuple):
+            if len(arg) == 2:
+                if isinstance(arg[1], dict):
+                    name, params = arg
+                else:
+                    name, rel = arg
+            elif len(arg) == 3:
+                name, rel, params = arg
+            else:
+                return None, None
+        else:
+            return None, None
+
+        transition = self.tm.get_transition(name, params)
+        return transition, rel

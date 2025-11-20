@@ -7,7 +7,7 @@ from fastapi import Request
 from pydantic import BaseModel
 from pydantic.types import StrictBool
 
-import cj_models
+from . import cj_models
 
 
 class FormProperty(BaseModel):
@@ -101,6 +101,18 @@ class TransitionManager:
                     if param.get("in") == "path":
                         # params.append(param.get("name"))
                         pass
+
+                # From query parameters
+                for param in operation.get("parameters", []):
+                    if param.get("in") == "query":
+                        params.append(FormProperty(
+                            name=param.get("name"),
+                            value=param.get("schema", {}).get("default"),
+                            type=param.get("schema", {}).get("type", "string"),
+                            required=param.get("required", False),
+                            prompt=param.get("description", param.get("name")),
+                            input_type=param.get("schema", {}).get("type", "string"),
+                        ))
 
                 # From request body
                 request_body = operation.get("requestBody")

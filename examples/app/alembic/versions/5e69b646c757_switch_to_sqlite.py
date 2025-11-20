@@ -1,8 +1,8 @@
-"""Initial migration
+"""switch to sqlite
 
-Revision ID: a1cda0f5b0f9
+Revision ID: 5e69b646c757
 Revises: 
-Create Date: 2025-06-05 22:34:31.631653
+Create Date: 2025-11-19 23:51:54.865634
 
 """
 from alembic import op
@@ -10,7 +10,7 @@ import sqlalchemy as sa
 
 
 # revision identifiers, used by Alembic.
-revision = 'a1cda0f5b0f9'
+revision = '5e69b646c757'
 down_revision = None
 branch_labels = None
 depends_on = None

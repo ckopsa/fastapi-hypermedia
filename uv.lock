@@ -535,8 +535,10 @@ app = [
 dev = [
     { name = "mypy" },
     { name = "pre-commit" },
+    { name = "pytest-asyncio" },
     { name = "pytest-cov" },
     { name = "ruff" },
+    { name = "sqlalchemy" },
     { name = "types-pyyaml" },
     { name = "types-requests" },
 ]
@@ -555,12 +557,14 @@ requires-dist = [
     { name = "pyjwt", marker = "extra == 'app'", specifier = ">=2.10.1" },
     { name = "pytest", marker = "extra == 'app'", specifier = ">=8.3.5" },
     { name = "pytest-asyncio", marker = "extra == 'app'", specifier = ">=0.24.0" },
+    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.24.0" },
     { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.1.0" },
     { name = "python-dotenv", marker = "extra == 'app'", specifier = ">=1.1.0" },
     { name = "python-jose", extras = ["cryptography"], marker = "extra == 'app'", specifier = ">=3.3.0" },
     { name = "requests", marker = "extra == 'app'", specifier = ">=2.28.1" },
     { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.3.0" },
     { name = "sqlalchemy", marker = "extra == 'app'", specifier = ">=2.0.41" },
+    { name = "sqlalchemy", marker = "extra == 'dev'", specifier = ">=2.0.41" },
     { name = "types-pyyaml", marker = "extra == 'dev'" },
     { name = "types-requests", marker = "extra == 'dev'" },
 ]

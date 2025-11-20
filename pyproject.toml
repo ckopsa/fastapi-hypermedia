@@ -33,8 +33,10 @@ dev = [
     "mypy>=1.8.0",
     "pytest-cov>=4.1.0",
     "pre-commit>=3.6.0",
+    "pytest-asyncio>=0.24.0",
     "types-requests",
     "types-PyYAML",
+    "sqlalchemy>=2.0.41",
 ]
 
 [tool.hatchling]
@@ -44,6 +46,7 @@ include = ["fastapi_hypermedia/templates/**/*"]
 [tool.pytest.ini_options]
 addopts = "--cov=fastapi_hypermedia --cov-report=term-missing"
 asyncio_mode = "auto"
+asyncio_default_fixture_loop_scope = "function"
 pythonpath = ["."]
 
 [tool.ruff]

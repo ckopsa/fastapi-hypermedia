@@ -10,6 +10,11 @@ from . import cj_models
 
 
 class FormProperty(BaseModel):
+    """
+    Represents a property in a transition form.
+    Maps to inputs in HTML forms or data fields in Collection+JSON queries.
+    """
+
     name: str
     type: str
     prompt: str
@@ -31,6 +36,10 @@ class FormProperty(BaseModel):
 
 
 class Form(BaseModel):
+    """
+    Represents a transition (link or form) derived from a FastAPI route.
+    """
+
     id: str
     name: str
     href: str
@@ -41,6 +50,7 @@ class Form(BaseModel):
     properties: list[dict[str, Any]]
 
     def to_link(self, rel: str | None = None) -> cj_models.Link:
+        """Converts the transition to a Collection+JSON Link."""
         return cj_models.Link(
             rel=rel or self.rel,
             href=self.href,
@@ -49,6 +59,7 @@ class Form(BaseModel):
         )
 
     def to_query(self) -> cj_models.Query:
+        """Converts the transition to a Collection+JSON Query."""
         return cj_models.Query(
             rel=self.rel,
             href=self.href,
@@ -59,6 +70,12 @@ class Form(BaseModel):
     def to_template(
         self, defaults: dict[str, str | StrictBool | int | float | None] | None = None
     ) -> cj_models.Template:
+        """
+        Converts the transition to a Collection+JSON Template.
+
+        Args:
+            defaults: A dictionary of default values to populate the template data.
+        """
         template_data = []
         for prop in self.properties:
             default_value = defaults.get(prop["name"]) if defaults else None
@@ -267,7 +284,14 @@ class TransitionManager:
         self, transition_name: str, context: dict[str, str]
     ) -> Form | None:
         """
-        Get a specific transition by its name.
+        Retrieves a transition (route) by its operation ID and formats its URL with the provided context.
+
+        Args:
+            transition_name: The operation ID of the route.
+            context: A dictionary of values to format the URL path parameters.
+
+        Returns:
+            A Form object representing the transition, or None if not found.
         """
         form = self.routes_info.get(transition_name)
         if form is not None:

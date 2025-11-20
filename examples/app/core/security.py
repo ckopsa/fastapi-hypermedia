@@ -19,14 +19,16 @@ async def get_current_user() -> AuthenticatedUser:
         username="demo",
         email="demo@example.com",
         full_name="Demo User",
-        disabled=False
+        disabled=False,
     )
 
 
 async def get_current_active_user(
-        current_user: Annotated[AuthenticatedUser, Depends(get_current_user)]) -> AuthenticatedUser:
+    current_user: Annotated[AuthenticatedUser, Depends(get_current_user)],
+) -> AuthenticatedUser:
     """Check if the current user is active."""
     if current_user.disabled:
         from fastapi import HTTPException
+
         raise HTTPException(status_code=400, detail="Inactive user")
     return current_user

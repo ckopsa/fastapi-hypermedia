@@ -1,4 +1,5 @@
 """Developer acceptance tests for hypermedia API scenarios"""
+
 from fastapi import Request
 from fastapi.responses import JSONResponse
 
@@ -6,7 +7,9 @@ from fastapi_hypermedia import cj_models
 from tests.helpers.cj_validator import is_valid_collection_json_response
 
 
-def test_developer_can_return_collection_json_response(test_app, test_client, sample_items):
+def test_developer_can_return_collection_json_response(
+    test_app, test_client, sample_items
+):
     """As a developer building a hypermedia API, I want to return a valid Collection+JSON document
     so that clients can navigate the API"""
 
@@ -19,10 +22,13 @@ def test_developer_can_return_collection_json_response(test_app, test_client, sa
             items=[
                 item.to_cj_data(href=f"http://example.com/items/{item.id}")
                 for item in sample_items
-            ]
+            ],
         )
         cj_response = cj_models.CollectionJson(collection=collection)
-        return JSONResponse(content=cj_response.model_dump(), media_type="application/vnd.collection+json")
+        return JSONResponse(
+            content=cj_response.model_dump(),
+            media_type="application/vnd.collection+json",
+        )
 
     response = test_client.get("/items")
     assert response.status_code == 200
@@ -46,12 +52,20 @@ def test_developer_can_include_links_in_collection(test_app, test_client):
             title="Items Collection",
             links=[
                 cj_models.Link(rel="self", href="http://example.com/items"),
-                cj_models.Link(rel="create", href="http://example.com/items", method="POST", prompt="Create Item"),
+                cj_models.Link(
+                    rel="create",
+                    href="http://example.com/items",
+                    method="POST",
+                    prompt="Create Item",
+                ),
             ],
-            items=[]
+            items=[],
         )
         cj_response = cj_models.CollectionJson(collection=collection)
-        return JSONResponse(content=cj_response.model_dump(), media_type="application/vnd.collection+json")
+        return JSONResponse(
+            content=cj_response.model_dump(),
+            media_type="application/vnd.collection+json",
+        )
 
     response = test_client.get("/items")
     assert response.status_code == 200
@@ -64,7 +78,9 @@ def test_developer_can_include_links_in_collection(test_app, test_client):
     assert data["collection"]["links"][1]["method"] == "POST"
 
 
-def test_developer_can_convert_domain_models_to_cj_items(test_app, test_client, sample_item):
+def test_developer_can_convert_domain_models_to_cj_items(
+    test_app, test_client, sample_item
+):
     """As a developer with Pydantic domain models, I want to automatically convert them to CJ item data
     so that I don't manually map fields"""
 
@@ -77,10 +93,13 @@ def test_developer_can_convert_domain_models_to_cj_items(test_app, test_client, 
         collection = cj_models.Collection(
             href=f"http://example.com/items/{item_id}",
             title="Single Item",
-            items=[cj_item]
+            items=[cj_item],
         )
         cj_response = cj_models.CollectionJson(collection=collection)
-        return JSONResponse(content=cj_response.model_dump(), media_type="application/vnd.collection+json")
+        return JSONResponse(
+            content=cj_response.model_dump(),
+            media_type="application/vnd.collection+json",
+        )
 
     response = test_client.get("/items/1")
     assert response.status_code == 200
@@ -117,9 +136,7 @@ def test_developer_can_generate_queries_from_routes(test_app, test_client):
         query = tm.routes_info["get_items"].to_query()
         # Return it in the collection
         collection = cj_models.Collection(
-            href="http://example.com/items",
-            title="Items",
-            queries=[query]
+            href="http://example.com/items", title="Items", queries=[query]
         )
         return cj_models.CollectionJson(collection=collection)
 
@@ -158,8 +175,7 @@ def test_developer_can_generate_templates_from_routes(test_app, test_client):
         template = tm.routes_info["create_item"].to_template()
 
         collection = cj_models.Collection(
-            href="http://example.com/items",
-            title="Items"
+            href="http://example.com/items", title="Items"
         )
         return cj_models.CollectionJson(collection=collection, template=[template])
 

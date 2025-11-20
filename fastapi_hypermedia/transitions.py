@@ -1,7 +1,5 @@
 import datetime
 import enum
-from typing import Dict, Union
-from typing import Optional, List
 
 from fastapi import Request
 from pydantic import BaseModel
@@ -14,11 +12,21 @@ class FormProperty(BaseModel):
     name: str
     type: str
     prompt: str
-    value: Union[StrictBool, int, float, dict, list, None, datetime.datetime, datetime.date, str] = None
+    value: (
+        StrictBool
+        | int
+        | float
+        | dict
+        | list
+        | None
+        | datetime.datetime
+        | datetime.date
+        | str
+    ) = None
     required: bool = False
-    input_type: Optional[str] = None
-    options: Optional[List[str]] = None
-    render_hint: Optional[str] = None
+    input_type: str | None = None
+    options: list[str] | None = None
+    render_hint: str | None = None
 
 
 class Form(BaseModel):
@@ -31,7 +39,7 @@ class Form(BaseModel):
     method: str
     properties: list[dict]
 
-    def to_link(self, rel: Optional[str] = None):
+    def to_link(self, rel: str | None = None):
         return cj_models.Link(
             rel=rel or self.rel,
             href=self.href,
@@ -47,17 +55,17 @@ class Form(BaseModel):
             data=[cj_models.TemplateData(**prop) for prop in self.properties],
         )
 
-    def to_template(self, defaults: Optional[Dict[str, Union[str, StrictBool, int, float, None]]] = None):
+    def to_template(
+        self, defaults: dict[str, str | StrictBool | int | float | None] | None = None
+    ):
         template_data = []
         for prop in self.properties:
-            default_value = defaults.get(prop['name']) if defaults else None
+            default_value = defaults.get(prop["name"]) if defaults else None
             if isinstance(default_value, enum.Enum):
                 default_value = default_value.value
             if default_value:
-                prop['value'] = default_value
-            template_data.append(cj_models.TemplateData(
-                **prop
-            ))
+                prop["value"] = default_value
+            template_data.append(cj_models.TemplateData(**prop))
         return cj_models.Template(
             name=self.name,
             data=template_data,
@@ -75,9 +83,9 @@ class TransitionManager:
     """
 
     def __init__(self, request: Request):
-        self.page_transitions: Dict[str, List[str]] = {}
-        self.item_transitions: Dict[str, List[str]] = {}
-        self.routes_info: Dict[str, Form] = {}
+        self.page_transitions: dict[str, list[str]] = {}
+        self.item_transitions: dict[str, list[str]] = {}
+        self.routes_info: dict[str, Form] = {}
         self._load_routes_from_schema(request)
 
     def _load_routes_from_schema(self, request: Request):
@@ -95,7 +103,7 @@ class TransitionManager:
                     continue
 
                 # Extract parameters for form properties
-                params: List[FormProperty] = []
+                params: list[FormProperty] = []
                 # From path e.g. /wip/{item_id}
                 for param in operation.get("parameters", []):
                     if param.get("in") == "path":
@@ -105,26 +113,38 @@ class TransitionManager:
                 # From query parameters
                 for param in operation.get("parameters", []):
                     if param.get("in") == "query":
-                        params.append(FormProperty(
-                            name=param.get("name"),
-                            value=param.get("schema", {}).get("default"),
-                            type=param.get("schema", {}).get("type", "string"),
-                            required=param.get("required", False),
-                            prompt=param.get("description", param.get("name")),
-                            input_type=param.get("schema", {}).get("type", "string"),
-                        ))
+                        params.append(
+                            FormProperty(
+                                name=param.get("name"),
+                                value=param.get("schema", {}).get("default"),
+                                type=param.get("schema", {}).get("type", "string"),
+                                required=param.get("required", False),
+                                prompt=param.get("description", param.get("name")),
+                                input_type=param.get("schema", {}).get(
+                                    "type", "string"
+                                ),
+                            )
+                        )
 
                 # From request body
                 request_body = operation.get("requestBody")
                 if request_body:
                     content = request_body.get("content", {})
                     if "application/json" in content:
-                        json_schema = content.get("application/json", {}).get("schema", {})
+                        json_schema = content.get("application/json", {}).get(
+                            "schema", {}
+                        )
                         if json_schema:
                             if "$ref" in json_schema:
-                                schema_name = json_schema["$ref"].split('/')[-1]
-                                json_schema = schema.get("components", {}).get("schemas", {}).get(schema_name, {})
-                                for name, props in json_schema.get("properties", {}).items():
+                                schema_name = json_schema["$ref"].split("/")[-1]
+                                json_schema = (
+                                    schema.get("components", {})
+                                    .get("schemas", {})
+                                    .get(schema_name, {})
+                                )
+                                for name, props in json_schema.get(
+                                    "properties", {}
+                                ).items():
                                     # Extract additional schema details
                                     enum_values = props.get("enum")
                                     schema_type = props.get("type", "string")
@@ -132,82 +152,119 @@ class TransitionManager:
 
                                     # extract enum values if available
                                     enumRef = props.get("allOf")
-                                    if enumRef and isinstance(enumRef, list) and len(enumRef) > 0:
-                                        enum_schema_name = enumRef[0].get("$ref", "").split('/')[-1]
-                                        enum_props = schema.get("components", {}).get("schemas", {}).get(
-                                            enum_schema_name, {})
+                                    if (
+                                        enumRef
+                                        and isinstance(enumRef, list)
+                                        and len(enumRef) > 0
+                                    ):
+                                        enum_schema_name = (
+                                            enumRef[0].get("$ref", "").split("/")[-1]
+                                        )
+                                        enum_props = (
+                                            schema.get("components", {})
+                                            .get("schemas", {})
+                                            .get(enum_schema_name, {})
+                                        )
                                         enum_values = enum_props.get("enum")
-                                        schema_type = enum_props.get("type", schema_type)
+                                        schema_type = enum_props.get(
+                                            "type", schema_type
+                                        )
 
                                     # Determine input_type
                                     input_type = schema_type  # Default
-                                    if schema_type == 'boolean':
-                                        input_type = 'checkbox'
-                                    elif schema_type == 'integer' or schema_type == 'number':
-                                        input_type = 'number'
-                                    elif schema_type == 'string' and enum_values:
-                                        input_type = 'select'
-                                    elif schema_type == 'string':
-                                        input_type = 'text'
-                                    params.append(FormProperty(
-                                        name=name,
-                                        value=props.get("default", None),
-                                        type=schema_type,
-                                        required=name in json_schema.get("required", []),
-                                        prompt=props.get("title", name),
-                                        input_type=input_type,
-                                        options=enum_values,
-                                        render_hint=render_hint,
-                                    ))
+                                    if schema_type == "boolean":
+                                        input_type = "checkbox"
+                                    elif (
+                                        schema_type == "integer"
+                                        or schema_type == "number"
+                                    ):
+                                        input_type = "number"
+                                    elif schema_type == "string" and enum_values:
+                                        input_type = "select"
+                                    elif schema_type == "string":
+                                        input_type = "text"
+                                    params.append(
+                                        FormProperty(
+                                            name=name,
+                                            value=props.get("default", None),
+                                            type=schema_type,
+                                            required=name
+                                            in json_schema.get("required", []),
+                                            prompt=props.get("title", name),
+                                            input_type=input_type,
+                                            options=enum_values,
+                                            render_hint=render_hint,
+                                        )
+                                    )
                             else:
                                 pass
                     elif "application/x-www-form-urlencoded" in content:
-                        form_schema = content.get("application/x-www-form-urlencoded", {}).get("schema", {})
+                        form_schema = content.get(
+                            "application/x-www-form-urlencoded", {}
+                        ).get("schema", {})
                         if form_schema:
                             if "$ref" in form_schema:
-                                schema_name = form_schema["$ref"].split('/')[-1]
-                                form_schema = schema.get("components", {}).get("schemas", {}).get(schema_name, {})
-                                for name, props in form_schema.get("properties", {}).items():
+                                schema_name = form_schema["$ref"].split("/")[-1]
+                                form_schema = (
+                                    schema.get("components", {})
+                                    .get("schemas", {})
+                                    .get(schema_name, {})
+                                )
+                                for name, props in form_schema.get(
+                                    "properties", {}
+                                ).items():
                                     # Extract additional schema details
                                     enum_values = props.get("enum")
                                     schema_type = props.get("type", "string")
-                                    render_hint = props.get("x-render-hint")  # Extract render_hint
+                                    render_hint = props.get(
+                                        "x-render-hint"
+                                    )  # Extract render_hint
 
                                     # Determine input_type
                                     input_type = schema_type  # Default
-                                    if schema_type == 'boolean':
-                                        input_type = 'checkbox'
-                                    elif schema_type == 'integer' or schema_type == 'number':
-                                        input_type = 'number'
-                                    elif schema_type == 'string' and enum_values:
-                                        input_type = 'select'
-                                    elif schema_type == 'string':
-                                        input_type = 'text'
+                                    if schema_type == "boolean":
+                                        input_type = "checkbox"
+                                    elif (
+                                        schema_type == "integer"
+                                        or schema_type == "number"
+                                    ):
+                                        input_type = "number"
+                                    elif schema_type == "string" and enum_values:
+                                        input_type = "select"
+                                    elif schema_type == "string":
+                                        input_type = "text"
 
-                                    params.append(FormProperty(
-                                        name=name,
-                                        value=props.get("default", None),
-                                        type=schema_type,
-                                        required=name in form_schema.get("required", []),
-                                        prompt=props.get("title", name),
-                                        input_type=input_type,
-                                        options=enum_values,
-                                        render_hint=render_hint,
-                                    ))
+                                    params.append(
+                                        FormProperty(
+                                            name=name,
+                                            value=props.get("default", None),
+                                            type=schema_type,
+                                            required=name
+                                            in form_schema.get("required", []),
+                                            prompt=props.get("title", name),
+                                            input_type=input_type,
+                                            options=enum_values,
+                                            render_hint=render_hint,
+                                        )
+                                    )
                             else:
                                 pass
                 self.routes_info[operation.get("operationId")] = Form(
                     id=operation.get("operationId"),
                     name=operation.get("operationId"),
                     href=path,
-                    rel=" ".join(operation.get("tags", [])) if operation.get("tags") else "",
+                    rel=" ".join(operation.get("tags", []))
+                    if operation.get("tags")
+                    else "",
                     tags=" ".join(operation.get("tags", [])),
                     title=operation.get("summary", ""),
                     method=method.upper(),
                     properties=[prop.model_dump() for prop in params],
                 )
 
-    def get_transition(self, transition_name: str, context: Dict[str, str]) -> Optional[Form]:
+    def get_transition(
+        self, transition_name: str, context: dict[str, str]
+    ) -> Form | None:
         """
         Get a specific transition by its name.
         """

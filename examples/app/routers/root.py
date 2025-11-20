@@ -1,12 +1,12 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Request, Depends, status
+from core.representor import Representor
+from core.security import AuthenticatedUser, get_current_user
+from dependencies import get_representor, get_transition_registry
+from fastapi import APIRouter, Depends, Request, status
 from fastapi.responses import HTMLResponse, RedirectResponse
 
 from fastapi_hypermedia import cj_models, transitions
-from core.representor import Representor
-from core.security import AuthenticatedUser, get_current_user
-from dependencies import get_transition_registry, get_representor
 
 router = APIRouter()
 
@@ -24,18 +24,17 @@ async def healthcheck():
     operation_id="home",
     responses={
         200: {
-            "content": {
-                "application/vnd.collection+json": {},
-                "text/html": {}
-            },
+            "content": {"application/vnd.collection+json": {}, "text/html": {}},
         }
     },
 )
 async def home(
-        request: Request,
-        current_user: AuthenticatedUser | None = Depends(get_current_user),
-        transition_manager: transitions.TransitionManager = Depends(get_transition_registry),
-        representor: Representor = Depends(get_representor),
+    request: Request,
+    current_user: AuthenticatedUser | None = Depends(get_current_user),
+    transition_manager: transitions.TransitionManager = Depends(
+        get_transition_registry
+    ),
+    representor: Representor = Depends(get_representor),
 ):
     """Serves the homepage."""
     if isinstance(current_user, RedirectResponse):
@@ -43,15 +42,25 @@ async def home(
 
     return await representor.represent(
         cj_models.CollectionJson(
-            collection=(cj_models.Collection(
-                href=str(request.url),
-                title="Home",
-                links=[t.to_link() for t in [
-                    transition_manager.get_transition("home", {}),
-                    transition_manager.get_transition("get_workflow_definitions", {}),
-                    transition_manager.get_transition("get_workflow_instances", {}),
-                ]],
-            )),
+            collection=(
+                cj_models.Collection(
+                    href=str(request.url),
+                    title="Home",
+                    links=[
+                        t.to_link()
+                        for t in [
+                            transition_manager.get_transition("home", {}),
+                            transition_manager.get_transition(
+                                "get_workflow_definitions", {}
+                            ),
+                            transition_manager.get_transition(
+                                "get_workflow_instances", {}
+                            ),
+                        ]
+                    ],
+                )
+            ),
             template=[],
             error=None,
-        ))
+        )
+    )

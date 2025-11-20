@@ -1,5 +1,6 @@
 import pytest
 from fastapi import FastAPI
+from fastapi.routing import APIRoute
 from fastapi.testclient import TestClient
 from pydantic import BaseModel
 
@@ -31,9 +32,6 @@ def sample_items():
     ]
 
 
-from fastapi.routing import APIRoute
-
-
 def generate_unique_id(route: APIRoute) -> str:
     return route.name
 
@@ -41,7 +39,9 @@ def generate_unique_id(route: APIRoute) -> str:
 @pytest.fixture
 def test_app():
     """Minimal FastAPI app for testing"""
-    app = FastAPI(title="Test Hypermedia API", generate_unique_id_function=generate_unique_id)
+    app = FastAPI(
+        title="Test Hypermedia API", generate_unique_id_function=generate_unique_id
+    )
     return app
 
 

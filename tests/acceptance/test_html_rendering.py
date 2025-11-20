@@ -1,17 +1,19 @@
 """Developer acceptance tests for HTML rendering"""
+
 from fastapi import Request
 from fastapi.responses import HTMLResponse
 
-from fastapi_hypermedia import cj_models, templating
+from fastapi_hypermedia import cj_models
 from tests.helpers.html_validator import has_html_form, has_html_links
 
 
 def render_cj_as_html(collection_json):
     """Render Collection+JSON using Jinja2 templates"""
-    templates = templating.get_templates()
     # Use the Jinja2 environment to render the template properly with inheritance
-    from jinja2 import Environment, FileSystemLoader
     import importlib.resources
+
+    from jinja2 import Environment, FileSystemLoader
+
     templates_dir = importlib.resources.files("fastapi_hypermedia.templates")
     env = Environment(loader=FileSystemLoader(str(templates_dir)))
     template = env.get_template("cj_template.html")
@@ -28,16 +30,22 @@ def test_developer_can_render_cj_as_html(test_app, test_client, sample_item):
 
     @test_app.get("/items/{item_id}", response_class=HTMLResponse)
     async def get_item_html(item_id: int):
-        cj_item = sample_item.to_cj_data(href=f"http://example.com/items/{sample_item.id}")
+        cj_item = sample_item.to_cj_data(
+            href=f"http://example.com/items/{sample_item.id}"
+        )
 
         collection = cj_models.Collection(
             href=f"http://example.com/items/{item_id}",
             title="Item Details",
             links=[
                 cj_models.Link(rel="self", href=f"http://example.com/items/{item_id}"),
-                cj_models.Link(rel="collection", href="http://example.com/items", prompt="Back to Items"),
+                cj_models.Link(
+                    rel="collection",
+                    href="http://example.com/items",
+                    prompt="Back to Items",
+                ),
             ],
-            items=[cj_item]
+            items=[cj_item],
         )
         cj_response = cj_models.CollectionJson(collection=collection)
 
@@ -75,7 +83,9 @@ def test_developer_can_include_forms_in_html_rendering(test_app, test_client):
             title="Items",
             links=[cj_models.Link(rel="self", href="http://example.com/items")],
         )
-        cj_response = cj_models.CollectionJson(collection=collection, template=[template])
+        cj_response = cj_models.CollectionJson(
+            collection=collection, template=[template]
+        )
 
         html_content = render_cj_as_html(cj_response)
         return HTMLResponse(content=html_content)
@@ -85,6 +95,6 @@ def test_developer_can_include_forms_in_html_rendering(test_app, test_client):
 
     html_content = response.text
     assert has_html_form(html_content)
-    assert "method=\"POST\"" in html_content  # Should have the template form
-    assert "name=\"name\"" in html_content  # Form fields
-    assert "name=\"description\"" in html_content
+    assert 'method="POST"' in html_content  # Should have the template form
+    assert 'name="name"' in html_content  # Form fields
+    assert 'name="description"' in html_content

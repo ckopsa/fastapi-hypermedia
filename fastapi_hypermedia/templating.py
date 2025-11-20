@@ -1,4 +1,5 @@
 import importlib.resources
+
 from fastapi.templating import Jinja2Templates
 
 

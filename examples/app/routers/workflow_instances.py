@@ -1,25 +1,22 @@
 from __future__ import annotations
 
-from fastapi import APIRouter, Request, Depends
-from fastapi.responses import HTMLResponse, RedirectResponse
-
 import models
-from fastapi_hypermedia import cj_models, transitions
-from fastapi_hypermedia.cj_models import CollectionJson
 from core.representor import Representor
 from core.security import AuthenticatedUser, get_current_user
-from dependencies import get_workflow_service, get_transition_registry, get_representor
+from dependencies import get_representor, get_transition_registry, get_workflow_service
+from fastapi import APIRouter, Depends, Request
+from fastapi.responses import HTMLResponse, RedirectResponse
 from services import WorkflowService
+
+from fastapi_hypermedia import cj_models, transitions
+from fastapi_hypermedia.cj_models import CollectionJson
 
 router = APIRouter(
     prefix="/workflow-instances",
     tags=["workflow-instances"],
     responses={
         200: {
-            "content": {
-                "application/vnd.collection+json": {},
-                "text/html": {}
-            },
+            "content": {"application/vnd.collection+json": {}, "text/html": {}},
         }
     },
 )
@@ -29,33 +26,45 @@ router = APIRouter(
     "/",
     response_model=CollectionJson,
     summary="Workflow Instances",
-    tags=["collection"]
+    tags=["collection"],
 )
 async def get_workflow_instances(
-        request: Request,
-        current_user: AuthenticatedUser | None = Depends(get_current_user),
-        service: WorkflowService = Depends(get_workflow_service),
-        representor: Representor = Depends(get_representor),
-        transition_manager: transitions.TransitionManager = Depends(get_transition_registry),
+    request: Request,
+    current_user: AuthenticatedUser | None = Depends(get_current_user),
+    service: WorkflowService = Depends(get_workflow_service),
+    representor: Representor = Depends(get_representor),
+    transition_manager: transitions.TransitionManager = Depends(
+        get_transition_registry
+    ),
 ):
     """Returns a Collection+JSON representation of workflow instances."""
     if isinstance(current_user, RedirectResponse):
         return current_user
 
-    workflow_instances: list[models.WorkflowInstance] = await service.list_instances_for_user(
-        user_id=current_user.user_id)
+    workflow_instances: list[
+        models.WorkflowInstance
+    ] = await service.list_instances_for_user(user_id=current_user.user_id)
 
     items = []
     for item in workflow_instances:
         links = []
         if item.status == models.WorkflowStatus.archived:
             links.append(
-                transition_manager.get_transition("view_workflow_instance", {"instance_id": item.id}).to_link())
+                transition_manager.get_transition(
+                    "view_workflow_instance", {"instance_id": item.id}
+                ).to_link()
+            )
         else:
             links.append(
-                transition_manager.get_transition("view_workflow_instance", {"instance_id": item.id}).to_link())
+                transition_manager.get_transition(
+                    "view_workflow_instance", {"instance_id": item.id}
+                ).to_link()
+            )
             links.append(
-                transition_manager.get_transition("archive_workflow_instance", {"instance_id": item.id}).to_link())
+                transition_manager.get_transition(
+                    "archive_workflow_instance", {"instance_id": item.id}
+                ).to_link()
+            )
         item_model = item.to_cj_data(
             href=str(request.url_for("view_workflow_instance", instance_id=item.id)),
             links=links,
@@ -65,11 +74,14 @@ async def get_workflow_instances(
     collection = cj_models.Collection(
         href=str(request.url),
         title="Workflow Instances",
-        links=[t.to_link() for t in [
-            transition_manager.get_transition("home", {}),
-            transition_manager.get_transition("get_workflow_instances", {}),
-            transition_manager.get_transition("get_workflow_definitions", {}),
-        ]],
+        links=[
+            t.to_link()
+            for t in [
+                transition_manager.get_transition("home", {}),
+                transition_manager.get_transition("get_workflow_instances", {}),
+                transition_manager.get_transition("get_workflow_definitions", {}),
+            ]
+        ],
         items=items,
     )
 
@@ -78,7 +90,8 @@ async def get_workflow_instances(
             collection=collection,
             template=[],
             error=None,
-        ))
+        )
+    )
 
 
 @router.get(
@@ -88,19 +101,22 @@ async def get_workflow_instances(
     tags=["item"],
 )
 async def view_workflow_instance(
-        request: Request,
-        instance_id: str,
-        current_user: AuthenticatedUser | None = Depends(get_current_user),
-        service: WorkflowService = Depends(get_workflow_service),
-        representor: Representor = Depends(get_representor),
-        transition_manager: transitions.TransitionManager = Depends(get_transition_registry),
+    request: Request,
+    instance_id: str,
+    current_user: AuthenticatedUser | None = Depends(get_current_user),
+    service: WorkflowService = Depends(get_workflow_service),
+    representor: Representor = Depends(get_representor),
+    transition_manager: transitions.TransitionManager = Depends(
+        get_transition_registry
+    ),
 ):
     """Returns a Collection+JSON representation of a specific workflow instance."""
     if isinstance(current_user, RedirectResponse):
         return current_user
 
-    workflow_instance = await service.get_workflow_instance_with_tasks(instance_id=instance_id,
-                                                                       user_id=current_user.user_id)
+    workflow_instance = await service.get_workflow_instance_with_tasks(
+        instance_id=instance_id, user_id=current_user.user_id
+    )
     if not workflow_instance:
         return HTMLResponse(status_code=404, content="Workflow Instance not found")
 
@@ -108,28 +124,43 @@ async def view_workflow_instance(
         transition_manager.get_transition("home", {}),
         transition_manager.get_transition("get_workflow_instances", {}),
         transition_manager.get_transition("get_workflow_definitions", {}),
-        transition_manager.get_transition("view_workflow_definition",
-                                          {"definition_id": workflow_instance.workflow_definition_id}),
-    ]
-
-    item_transitions = [
+        transition_manager.get_transition(
+            "view_workflow_definition",
+            {"definition_id": workflow_instance.workflow_definition_id},
+        ),
     ]
 
     tasks = workflow_instance.tasks
     # sort by completed last and then order
-    tasks.sort(key=lambda x: x.order if x.status != models.TaskStatus.completed else x.order + 100)
+    tasks.sort(
+        key=lambda x: x.order
+        if x.status != models.TaskStatus.completed
+        else x.order + 100
+    )
 
     items = []
     for item in [models.SimpleTaskInstance.from_task_instance(task) for task in tasks]:
         links = []
         if item.status == models.TaskStatus.completed:
-            links.append(transition_manager.get_transition("reopen_task_instance", {"task_id": item.id}).to_link())
+            links.append(
+                transition_manager.get_transition(
+                    "reopen_task_instance", {"task_id": item.id}
+                ).to_link()
+            )
         else:
-            links.append(transition_manager.get_transition("complete_task_instance", {"task_id": item.id}).to_link())
-        items.append(item.to_cj_data(
-            href=str(request.url_for("view_workflow_instance", instance_id=instance_id)),
-            links=links,
-        ))
+            links.append(
+                transition_manager.get_transition(
+                    "complete_task_instance", {"task_id": item.id}
+                ).to_link()
+            )
+        items.append(
+            item.to_cj_data(
+                href=str(
+                    request.url_for("view_workflow_instance", instance_id=instance_id)
+                ),
+                links=links,
+            )
+        )
 
     collection = cj_models.Collection(
         href=str(request.url),
@@ -143,7 +174,8 @@ async def view_workflow_instance(
             collection=collection,
             template=[],
             error=None,
-        ))
+        )
+    )
 
 
 @router.post(
@@ -153,22 +185,25 @@ async def view_workflow_instance(
     tags=["edit"],
 )
 async def complete_task_instance(
-        request: Request,
-        task_id: str,
-        current_user: AuthenticatedUser | None = Depends(get_current_user),
-        service: WorkflowService = Depends(get_workflow_service),
+    request: Request,
+    task_id: str,
+    current_user: AuthenticatedUser | None = Depends(get_current_user),
+    service: WorkflowService = Depends(get_workflow_service),
 ):
     if isinstance(current_user, RedirectResponse):
         return current_user
 
     task_instance = await service.complete_task(
-        task_id=task_id,
-        user_id=current_user.user_id
+        task_id=task_id, user_id=current_user.user_id
     )
 
     return RedirectResponse(
-        url=str(request.url_for("view_workflow_instance", instance_id=task_instance.workflow_instance_id)),
-        status_code=303
+        url=str(
+            request.url_for(
+                "view_workflow_instance", instance_id=task_instance.workflow_instance_id
+            )
+        ),
+        status_code=303,
     )
 
 
@@ -179,22 +214,25 @@ async def complete_task_instance(
     tags=["edit"],
 )
 async def reopen_task_instance(
-        request: Request,
-        task_id: str,
-        current_user: AuthenticatedUser | None = Depends(get_current_user),
-        service: WorkflowService = Depends(get_workflow_service),
+    request: Request,
+    task_id: str,
+    current_user: AuthenticatedUser | None = Depends(get_current_user),
+    service: WorkflowService = Depends(get_workflow_service),
 ):
     if isinstance(current_user, RedirectResponse):
         return current_user
 
     task_instance = await service.undo_complete_task(
-        task_id=task_id,
-        user_id=current_user.user_id
+        task_id=task_id, user_id=current_user.user_id
     )
 
     return RedirectResponse(
-        url=str(request.url_for("view_workflow_instance", instance_id=task_instance.workflow_instance_id)),
-        status_code=303
+        url=str(
+            request.url_for(
+                "view_workflow_instance", instance_id=task_instance.workflow_instance_id
+            )
+        ),
+        status_code=303,
     )
 
 
@@ -205,20 +243,21 @@ async def reopen_task_instance(
     tags=["edit"],
 )
 async def archive_workflow_instance(
-        request: Request,
-        instance_id: str,
-        current_user: AuthenticatedUser | None = Depends(get_current_user),
-        service: WorkflowService = Depends(get_workflow_service),
+    request: Request,
+    instance_id: str,
+    current_user: AuthenticatedUser | None = Depends(get_current_user),
+    service: WorkflowService = Depends(get_workflow_service),
 ):
     if isinstance(current_user, RedirectResponse):
         return current_user
 
     workflow_instance = await service.archive_workflow_instance(
-        instance_id=instance_id,
-        user_id=current_user.user_id
+        instance_id=instance_id, user_id=current_user.user_id
     )
 
     return RedirectResponse(
-        url=str(request.url_for("view_workflow_instance", instance_id=workflow_instance.id)),
-        status_code=303
+        url=str(
+            request.url_for("view_workflow_instance", instance_id=workflow_instance.id)
+        ),
+        status_code=303,
     )

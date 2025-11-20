@@ -1,85 +1,106 @@
 from __future__ import annotations
 
 import datetime
-from typing import Optional, List, Union
 
-from pydantic import BaseModel, Field as PydanticField
+from pydantic import BaseModel
+from pydantic import Field as PydanticField
 from pydantic.types import StrictBool
 
 
 class Link(BaseModel):
     rel: str
     href: str
-    prompt: Optional[str] = None
-    render: Optional[str] = None
-    media_type: Optional[str] = None
-    method: Optional[str] = PydanticField("GET", description="HTTP method for the link")
+    prompt: str | None = None
+    render: str | None = None
+    media_type: str | None = None
+    method: str | None = PydanticField("GET", description="HTTP method for the link")
 
 
 class ItemData(BaseModel):
     name: str
-    value: Union[StrictBool, int, float, dict, list, None, datetime.datetime, datetime.date, str] = PydanticField(None,
-                                                                                                                  description="Value of the data item")
-    prompt: Optional[str] = PydanticField(None, description="Human Readable prompt for the data")
-    type: Optional[str] = PydanticField(None, description="Type of the data")
-    input_type: Optional[str] = PydanticField(None,
-                                              description="Suggested input type (e.g., 'text', 'checkbox', 'number', 'select')")
-    render_hint: Optional[str] = PydanticField(None,
-                                               description="A hint for how to render the data item (e.g., 'textarea', 'colorpicker')")
+    value: (
+        StrictBool
+        | int
+        | float
+        | dict
+        | list
+        | None
+        | datetime.datetime
+        | datetime.date
+        | str
+    ) = PydanticField(None, description="Value of the data item")
+    prompt: str | None = PydanticField(
+        None, description="Human Readable prompt for the data"
+    )
+    type: str | None = PydanticField(None, description="Type of the data")
+    input_type: str | None = PydanticField(
+        None,
+        description="Suggested input type (e.g., 'text', 'checkbox', 'number', 'select')",
+    )
+    render_hint: str | None = PydanticField(
+        None,
+        description="A hint for how to render the data item (e.g., 'textarea', 'colorpicker')",
+    )
 
 
 class QueryData(ItemData):
-    options: Optional[List[str]] = PydanticField(None, description="List of options for 'select' input type")
+    options: list[str] | None = PydanticField(
+        None, description="List of options for 'select' input type"
+    )
 
 
 class TemplateData(QueryData):
-    required: Optional[bool] = False
+    required: bool | None = False
 
 
 class Query(BaseModel):
     rel: str
     href: str
-    prompt: Optional[str] = None
-    name: Optional[str] = None
-    data: List[QueryData] = PydanticField(default_factory=list)
+    prompt: str | None = None
+    name: str | None = None
+    data: list[QueryData] = PydanticField(default_factory=list)
 
 
 class Item(BaseModel):
     href: str
     rel: str
-    data: List[ItemData] = PydanticField(default_factory=list)
-    links: List[Link] = PydanticField(default_factory=list)
+    data: list[ItemData] = PydanticField(default_factory=list)
+    links: list[Link] = PydanticField(default_factory=list)
 
 
 class Collection(BaseModel):
     version: str = "1.0"
     href: str
     title: str
-    links: List[Link] = PydanticField(default_factory=list)
-    items: List[Item] = PydanticField(default_factory=list)
-    queries: List[Query] = PydanticField(default_factory=list)
+    links: list[Link] = PydanticField(default_factory=list)
+    items: list[Item] = PydanticField(default_factory=list)
+    queries: list[Query] = PydanticField(default_factory=list)
 
 
 class Template(BaseModel):
     name: str
-    data: List[TemplateData] = PydanticField(default_factory=list)
-    href: Optional[str] = None
-    method: Optional[str] = PydanticField("POST", description="HTTP method for the template")
-    prompt: Optional[str] = None
-    rel: Optional[str] = None
+    data: list[TemplateData] = PydanticField(default_factory=list)
+    href: str | None = None
+    method: str | None = PydanticField(
+        "POST", description="HTTP method for the template"
+    )
+    prompt: str | None = None
+    rel: str | None = None
 
 
 class Error(BaseModel):
     title: str
     code: int
     message: str
-    details: Optional[str] = None
+    details: str | None = None
 
 
 class CollectionJson(BaseModel):
     collection: Collection
-    template: Optional[List[Template]] = PydanticField(None, description="Templates for the collection")
-    error: Optional[Error] = PydanticField(None, description="Error details, if any")
+    template: list[Template] | None = PydanticField(
+        None, description="Templates for the collection"
+    )
+    error: Error | None = PydanticField(None, description="Error details, if any")
 
 
 def to_collection_json_data(self: BaseModel, href="", links=None, rel="item") -> Item:
@@ -92,13 +113,15 @@ def to_collection_json_data(self: BaseModel, href="", links=None, rel="item") ->
     cj_data = []
 
     for name, definition in schema.get("properties", {}).items():
-        cj_data.append(ItemData(
-            name=name,
-            value=model_dict.get(name),
-            prompt=definition.get("title") or name.replace("_", " ").title(),
-            type=definition.get("type"),
-            render_hint=definition.get("x-render-hint"),
-        ))
+        cj_data.append(
+            ItemData(
+                name=name,
+                value=model_dict.get(name),
+                prompt=definition.get("title") or name.replace("_", " ").title(),
+                type=definition.get("type"),
+                render_hint=definition.get("x-render-hint"),
+            )
+        )
     return Item(
         href=href,
         rel=rel,

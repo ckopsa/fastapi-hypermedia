@@ -1,8 +1,8 @@
-import json
-from typing import Any, Dict
+from typing import Any
 
 try:
     import jsonschema
+
     HAS_JSONSCHEMA = True
 except ImportError:
     HAS_JSONSCHEMA = False
@@ -28,8 +28,8 @@ CJ_SCHEMA = {
                             "render": {"type": "string"},
                             "method": {"type": "string"},
                         },
-                        "required": ["rel", "href"]
-                    }
+                        "required": ["rel", "href"],
+                    },
                 },
                 "items": {
                     "type": "array",
@@ -48,17 +48,24 @@ CJ_SCHEMA = {
                                         "prompt": {"type": ["string", "null"]},
                                         "input_type": {"type": ["string", "null"]},
                                         "required": {"type": ["boolean", "null"]},
-                                        "options": {"oneOf": [{"type": "array"}, {"type": "null"}]},
+                                        "options": {
+                                            "oneOf": [
+                                                {"type": "array"},
+                                                {"type": "null"},
+                                            ]
+                                        },
                                         "render_hint": {"type": ["string", "null"]},
                                     },
                                     "required": ["name"],
-                                    "additionalProperties": True
-                                }
+                                    "additionalProperties": True,
+                                },
                             },
-                            "links": {"$ref": "#/properties/collection/properties/links"}
+                            "links": {
+                                "$ref": "#/properties/collection/properties/links"
+                            },
                         },
-                        "required": ["href"]
-                    }
+                        "required": ["href"],
+                    },
                 },
                 "queries": {
                     "type": "array",
@@ -68,14 +75,16 @@ CJ_SCHEMA = {
                             "rel": {"type": "string"},
                             "href": {"type": "string", "format": "uri"},
                             "prompt": {"type": "string"},
-                            "data": {"$ref": "#/properties/collection/properties/items/items/properties/data"},
-                            "name": {"type": ["string", "null"]}
+                            "data": {
+                                "$ref": "#/properties/collection/properties/items/items/properties/data"
+                            },
+                            "name": {"type": ["string", "null"]},
                         },
-                        "required": ["rel", "href"]
-                    }
-                }
+                        "required": ["rel", "href"],
+                    },
+                },
             },
-            "required": ["href"]
+            "required": ["href"],
         },
         "template": {
             "type": "array",
@@ -83,26 +92,28 @@ CJ_SCHEMA = {
                 "type": "object",
                 "properties": {
                     "name": {"type": "string"},
-                    "data": {"$ref": "#/properties/collection/properties/items/items/properties/data"},
+                    "data": {
+                        "$ref": "#/properties/collection/properties/items/items/properties/data"
+                    },
                     "href": {"type": "string", "format": "uri"},
-                    "method": {"type": "string"}
-                }
-            }
+                    "method": {"type": "string"},
+                },
+            },
         },
         "error": {
             "type": "object",
             "properties": {
                 "title": {"type": "string"},
                 "code": {"type": "integer"},
-                "message": {"type": "string"}
-            }
-        }
+                "message": {"type": "string"},
+            },
+        },
     },
-    "required": ["collection"]
+    "required": ["collection"],
 }
 
 
-def validate_collection_json(data: Dict[str, Any]) -> bool:
+def validate_collection_json(data: dict[str, Any]) -> bool:
     """
     Validate that data conforms to Collection+JSON schema.
     Returns True if valid, raises exception if invalid.
@@ -119,10 +130,10 @@ def validate_collection_json(data: Dict[str, Any]) -> bool:
         jsonschema.validate(data, CJ_SCHEMA)
         return True
     except jsonschema.ValidationError as e:
-        raise ValueError(f"Invalid Collection+JSON: {e.message}")
+        raise ValueError(f"Invalid Collection+JSON: {e.message}") from None
 
 
-def is_valid_collection_json_response(response_data: Dict[str, Any]) -> bool:
+def is_valid_collection_json_response(response_data: dict[str, Any]) -> bool:
     """
     Check if response data is a valid Collection+JSON document.
     Returns True if valid, False otherwise.
@@ -132,7 +143,3 @@ def is_valid_collection_json_response(response_data: Dict[str, Any]) -> bool:
         return True
     except ValueError:
         return False
-
-# For testing, temporarily always valid
-def is_valid_collection_json_response(response_data: Dict[str, Any]) -> bool:
-    return "collection" in response_data and "href" in response_data["collection"]

@@ -1,14 +1,14 @@
 from fastapi import Request
-from fastapi.responses import HTMLResponse, JSONResponse
+from fastapi.responses import JSONResponse
 
 from fastapi_hypermedia import cj_models
 
 
 class Representor:
     def __init__(
-            self,
-            request: Request,
-            html_renderer,
+        self,
+        request: Request,
+        html_renderer,
     ):
         self.request = request
         self.html_renderer = html_renderer
@@ -21,9 +21,15 @@ class Representor:
                 case "application/vnd.collection+json":
                     return JSONResponse(
                         content=collection_json.model_dump(),
-                        headers={"Content-Type": "application/vnd.collection+json"}
+                        headers={"Content-Type": "application/vnd.collection+json"},
                     )
         # Use template-based rendering
-        return await self.html_renderer.render("cj_template.html", self.request,
-                                               {"collection": collection_json.collection, "request": self.request,
-                                                "template": collection_json.template, })
+        return await self.html_renderer.render(
+            "cj_template.html",
+            self.request,
+            {
+                "collection": collection_json.collection,
+                "request": self.request,
+                "template": collection_json.template,
+            },
+        )

@@ -1,22 +1,28 @@
 import uuid
 from datetime import datetime
-from typing import Optional, List
 
+from db_models.enums import TaskStatus, WorkflowStatus
 from pydantic import BaseModel, Field
-
-from db_models.enums import WorkflowStatus, TaskStatus
 
 
 class TaskDefinitionBase(BaseModel):
-    name: str = Field(..., description="Name of the task", title="Task Name",
-                      examples=["Review Document", "Approve Budget"])
-    order: int = Field(..., description="Order of the task in the workflow", title="Task Order",
-                       json_schema_extra={"x-render-hint": "hidden"})
-    due_datetime_offset_minutes: Optional[int] = Field(
+    name: str = Field(
+        ...,
+        description="Name of the task",
+        title="Task Name",
+        examples=["Review Document", "Approve Budget"],
+    )
+    order: int = Field(
+        ...,
+        description="Order of the task in the workflow",
+        title="Task Order",
+        json_schema_extra={"x-render-hint": "hidden"},
+    )
+    due_datetime_offset_minutes: int | None = Field(
         0,
         description="Offset in minutes for the task's due date from the workflow instance's due date",
         title="Due Date Offset",
-        json_schema_extra={"x-render-hint": "hidden"}
+        json_schema_extra={"x-render-hint": "hidden"},
     )
 
 
@@ -26,7 +32,7 @@ class TaskInstance(BaseModel):
     name: str
     order: int
     status: TaskStatus = TaskStatus.pending
-    due_datetime: Optional[datetime] = None  # New field
+    due_datetime: datetime | None = None  # New field
 
     class Config:
         from_attributes = True
@@ -49,15 +55,24 @@ class SimpleTaskInstance(BaseModel):
 
 
 class WorkflowInstance(BaseModel):
-    id: str = Field(default_factory=lambda: "wf_" + str(uuid.uuid4())[:8], json_schema_extra={"x-render-hint": "hidden"})
-    workflow_definition_id: str = Field(..., json_schema_extra={"x-render-hint": "hidden"})
-    name: Optional[str] = None  # Made name optional
+    id: str = Field(
+        default_factory=lambda: "wf_" + str(uuid.uuid4())[:8],
+        json_schema_extra={"x-render-hint": "hidden"},
+    )
+    workflow_definition_id: str = Field(
+        ..., json_schema_extra={"x-render-hint": "hidden"}
+    )
+    name: str | None = None  # Made name optional
     user_id: str = Field(..., json_schema_extra={"x-render-hint": "hidden"})
     status: WorkflowStatus = WorkflowStatus.active
     created_at: datetime = Field(default_factory=datetime.utcnow)
-    share_token: Optional[str] = Field(None, json_schema_extra={"x-render-hint": "hidden"})
-    due_datetime: Optional[datetime] = Field(None, json_schema_extra={"x-render-hint": "hidden"})
-    tasks: List[TaskInstance] = Field(default_factory=list, json_schema_extra={"x-render-hint": "hidden"})
+    share_token: str | None = Field(None, json_schema_extra={"x-render-hint": "hidden"})
+    due_datetime: datetime | None = Field(
+        None, json_schema_extra={"x-render-hint": "hidden"}
+    )
+    tasks: list[TaskInstance] = Field(
+        default_factory=list, json_schema_extra={"x-render-hint": "hidden"}
+    )
 
     class Config:
         from_attributes = True
@@ -66,13 +81,16 @@ class WorkflowInstance(BaseModel):
 class WorkflowDefinition(BaseModel):
     id: str = Field(
         default_factory=lambda: "def_" + str(uuid.uuid4())[:8],
-        json_schema_extra={"x-render-hint": "hidden"}
+        json_schema_extra={"x-render-hint": "hidden"},
     )
     name: str
-    description: Optional[str] = ""
-    task_definitions: List[TaskDefinitionBase] = Field(default_factory=list,
-                                                       json_schema_extra={"x-render-hint": "hidden"})
-    due_datetime: Optional[datetime] = Field(None, json_schema_extra={"x-render-hint": "hidden"})
+    description: str | None = ""
+    task_definitions: list[TaskDefinitionBase] = Field(
+        default_factory=list, json_schema_extra={"x-render-hint": "hidden"}
+    )
+    due_datetime: datetime | None = Field(
+        None, json_schema_extra={"x-render-hint": "hidden"}
+    )
 
     class Config:
         from_attributes = True
@@ -80,23 +98,26 @@ class WorkflowDefinition(BaseModel):
 
 class WorkflowDefinitionCreateRequest(BaseModel):
     name: str
-    description: Optional[str] = ""
+    description: str | None = ""
 
 
 class SimpleWorkflowDefinitionCreateRequest(BaseModel):
-    id: str = Field(default_factory=lambda: "def_" + str(uuid.uuid4())[:8], json_schema_extra={"x-render-hint": "hidden"})
+    id: str = Field(
+        default_factory=lambda: "def_" + str(uuid.uuid4())[:8],
+        json_schema_extra={"x-render-hint": "hidden"},
+    )
     name: str = "New Workflow Definition"
-    description: Optional[str] = ""
+    description: str | None = ""
     task_definitions: str = Field(
         "1. Task One\n2. Task Two\n3. Task Three",
         description="Newline-separated list of task names",
         title="Task Definitions",
         json_schema_extra={
             "x-render-hint": "textarea",
-        }
+        },
     )
 
 
 class WorkflowInstanceCreateRequest(BaseModel):
     definition_id: str
-    name: Optional[str] = None
+    name: str | None = None

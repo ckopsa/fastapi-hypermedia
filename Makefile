@@ -4,7 +4,7 @@ install:
 	uv sync --extra dev
 
 dev:
-	cd examples/app && uv run fastapi dev main.py
+	cd examples/app && uv run fastapi dev main.py --port 8082
 
 lint:
 	uv run ruff check fastapi_hypermedia/

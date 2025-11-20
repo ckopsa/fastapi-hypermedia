@@ -48,6 +48,45 @@ class Hypermedia:
         Returns:
             A CollectionResponse.
         """
+        cj = self.create_collection_json(
+            title=title,
+            href=href,
+            items=items,
+            item_href=item_href,
+            links=links,
+            queries=queries,
+            templates=templates,
+            error=error,
+        )
+        return CollectionResponse(cj)
+
+    def create_collection_json(
+        self,
+        title: str,
+        href: str | None = None,
+        items: Sequence[BaseModel | Item | Any] | None = None,
+        item_href: Callable[[Any], str] | None = None,
+        links: Sequence[str | Link | tuple[str, str]] | None = None,
+        queries: Sequence[str | Query | tuple[str, str]] | None = None,
+        templates: Sequence[str | Template | tuple[str, str]] | None = None,
+        error: Any = None,
+    ) -> CollectionJson:
+        """
+        Creates a CollectionJson object with the given data.
+
+        Args:
+            title: The title of the collection.
+            href: The URI of the collection (default: current request URL).
+            items: A list of items (Pydantic models, Items, or objects with to_cj_data).
+            item_href: A function to generate the HREF for an item.
+            links: A list of links (Link objects, route names, or (route_name, rel) tuples).
+            queries: A list of queries (Query objects, route names, or (route_name, rel) tuples).
+            templates: A list of templates (Template objects, route names, or (route_name, rel) tuples).
+            error: An optional error object.
+
+        Returns:
+            A CollectionJson object.
+        """
         href = href or str(self.request.url)
         items = items or []
         links = links or []
@@ -67,12 +106,11 @@ class Hypermedia:
             queries=cj_queries,
         )
 
-        cj = CollectionJson(
+        return CollectionJson(
             collection=collection,
             template=cj_templates if cj_templates else None,
             error=error,
         )
-        return CollectionResponse(cj)
 
     def _process_items(
         self, items: Sequence[Any], href_factory: Callable[[Any], str] | None

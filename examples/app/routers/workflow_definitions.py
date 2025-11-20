@@ -5,15 +5,15 @@ from typing import Annotated, Any
 from fastapi import APIRouter, Depends, Form, Request
 from fastapi.responses import HTMLResponse, RedirectResponse
 
-from fastapi_hypermedia import cj_models, transitions
+from fastapi_hypermedia import Hypermedia
 from fastapi_hypermedia.cj_models import CollectionJson
 
 from .. import models
 from ..core.representor import Representor
 from ..core.security import AuthenticatedUser, get_current_user
 from ..dependencies import (
+    get_hypermedia,
     get_representor,
-    get_transition_registry,
     get_workflow_service,
 )
 from ..schemas.hypermedia import WorkflowItem
@@ -41,9 +41,7 @@ async def get_workflow_definitions(
     current_user: AuthenticatedUser | None = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
     representor: Representor = Depends(get_representor),
-    transition_manager: transitions.TransitionManager = Depends(
-        get_transition_registry
-    ),
+    hypermedia: Hypermedia = Depends(get_hypermedia),
 ) -> Any:
     """Returns a Collection+JSON representation of workflow definitions."""
     if isinstance(current_user, RedirectResponse):
@@ -54,34 +52,22 @@ async def get_workflow_definitions(
     ] = await service.list_workflow_definitions()
 
     items = [
-        WorkflowItem.from_entity(d, request, transition_manager)
+        WorkflowItem.from_entity(d, request, hypermedia.tm)
         for d in workflow_definitions
     ]
 
-    collection = cj_models.Collection(
-        href=str(request.url),
+    cj = hypermedia.create_collection_json(
         title="Workflow Definitions",
         links=[
-            t.to_link()
-            for t in [
-                transition_manager.get_transition("home", {}),
-                transition_manager.get_transition("get_workflow_instances", {}),
-                transition_manager.get_transition("get_workflow_definitions", {}),
-                transition_manager.get_transition(
-                    "simple_create_workflow_definition_form", {}
-                ),
-            ]
-            if t
+            "home",
+            "get_workflow_instances",
+            "get_workflow_definitions",
+            "simple_create_workflow_definition_form",
         ],
         items=items,
-        queries=[],
     )
 
-    return await representor.represent(
-        cj_models.CollectionJson(
-            collection=collection,
-        )
-    )
+    return await representor.represent(cj)
 
 
 @router.post(
@@ -130,9 +116,7 @@ async def view_workflow_definition(
     current_user: AuthenticatedUser | None = Depends(get_current_user),
     service: WorkflowService = Depends(get_workflow_service),
     representor: Representor = Depends(get_representor),
-    transition_manager: transitions.TransitionManager = Depends(
-        get_transition_registry
-    ),
+    hypermedia: Hypermedia = Depends(get_hypermedia),
 ) -> Any:
     """Returns a Collection+JSON representation of a specific workflow definition."""
     if isinstance(current_user, RedirectResponse):
@@ -145,38 +129,13 @@ async def view_workflow_definition(
     if not workflow_definition:
         return HTMLResponse(status_code=404, content="Workflow Definition not found")
 
-    items = []
-    for item in workflow_definition + workflow_definition[0].task_definitions:
-        item_model = item.to_cj_data(
-            href=str(
-                request.url_for("view_workflow_definition", definition_id=definition_id)
-            )
-        )
-        items.append(item_model)
-
-    collection = cj_models.Collection(
-        href=str(request.url),
-        title="View Workflow Definition",
-        links=[
-            t.to_link()
-            for t in [
-                transition_manager.get_transition("home", {}),
-                transition_manager.get_transition("get_workflow_instances", {}),
-                transition_manager.get_transition("get_workflow_definitions", {}),
-            ]
-            if t
-        ],
-        items=items,
-        queries=[],
-    )
-
     first_workflow_definition: models.WorkflowDefinition = workflow_definition[0]
     templates = []
-    if t1 := transition_manager.get_transition(
+    if t1 := hypermedia.tm.get_transition(
         "create_workflow_instance_from_definition", {"definition_id": definition_id}
     ):
         templates.append(t1.to_template())
-    if t2 := transition_manager.get_transition("simple_create_workflow_definition", {}):
+    if t2 := hypermedia.tm.get_transition("simple_create_workflow_definition", {}):
         templates.append(
             t2.to_template(
                 {
@@ -189,13 +148,26 @@ async def view_workflow_definition(
                 }
             )
         )
-    return await representor.represent(
-        cj_models.CollectionJson(
-            collection=collection,
-            template=templates,
-            error=None,
-        )
+
+    items_list: list[Any] = []
+    items_list.extend(workflow_definition)
+    items_list.extend(workflow_definition[0].task_definitions)
+
+    cj = hypermedia.create_collection_json(
+        title="View Workflow Definition",
+        links=[
+            "home",
+            "get_workflow_instances",
+            "get_workflow_definitions",
+        ],
+        items=items_list,
+        item_href=lambda item: str(
+            request.url_for("view_workflow_definition", definition_id=definition_id)
+        ),
+        templates=templates,
     )
+
+    return await representor.represent(cj)
 
 
 @router.post(
@@ -274,10 +246,8 @@ async def cj_create_workflow_definition(
 async def simple_create_workflow_definition_form(
     request: Request,
     current_user: AuthenticatedUser | None = Depends(get_current_user),
-    transition_manager: transitions.TransitionManager = Depends(
-        get_transition_registry
-    ),
     representor: Representor = Depends(get_representor),
+    hypermedia: Hypermedia = Depends(get_hypermedia),
 ) -> Any:
     """Returns a Collection+JSON representation of a form to create a new workflow definition."""
     if isinstance(current_user, RedirectResponse):
@@ -285,22 +255,7 @@ async def simple_create_workflow_definition_form(
 
     assert current_user is not None
 
-    collection = cj_models.Collection(
-        href=str(request.url),
-        title="Create Workflow Definition",
-        links=[
-            t.to_link()
-            for t in [
-                transition_manager.get_transition("home", {}),
-                transition_manager.get_transition("get_workflow_definitions", {}),
-            ]
-            if t
-        ],
-        items=[],
-        queries=[],
-    )
-
-    t = transition_manager.get_transition("simple_create_workflow_definition", {})
+    t = hypermedia.tm.get_transition("simple_create_workflow_definition", {})
     template = (
         [
             t.to_template(
@@ -311,13 +266,16 @@ async def simple_create_workflow_definition_form(
         else []
     )
 
-    return await representor.represent(
-        cj_models.CollectionJson(
-            collection=collection,
-            template=template,
-            error=None,
-        )
+    cj = hypermedia.create_collection_json(
+        title="Create Workflow Definition",
+        links=[
+            "home",
+            "get_workflow_definitions",
+        ],
+        templates=template,
     )
+
+    return await representor.represent(cj)
 
 
 @router.post(

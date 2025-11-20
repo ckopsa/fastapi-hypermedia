@@ -1,6 +1,7 @@
 from fastapi import Depends, Request
 from sqlalchemy.orm import Session
 
+from fastapi_hypermedia import Hypermedia
 from fastapi_hypermedia.templating import get_templates
 from fastapi_hypermedia.transitions import TransitionManager
 
@@ -46,6 +47,10 @@ def get_workflow_service(
 
 def get_transition_registry(request: Request) -> TransitionManager:
     return TransitionManager(request)
+
+
+def get_hypermedia(request: Request) -> Hypermedia:
+    return Hypermedia(request)
 
 
 def get_representor(

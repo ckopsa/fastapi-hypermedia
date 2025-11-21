@@ -157,3 +157,23 @@ def test_missing_params_error(test_app, test_client):
 
     assert "Missing parameter" in str(excinfo.value)
     assert "item_id" in str(excinfo.value)
+
+
+def test_linkdef_usage(test_app, test_client):
+    from fastapi_hypermedia import LinkDef
+
+    @test_app.get("/linkdef", name="linkdef_route")
+    async def linkdef_route(request: Request, hm: Hypermedia = Depends(Hypermedia)):
+        return hm.create_collection_response(
+            title="LinkDef Test",
+            links=[
+                LinkDef(name="linkdef_route", rel="self"),
+                LinkDef(name="linkdef_route", rel="other", params={"q": "test"}),
+            ],
+        )
+
+    response = test_client.get("/linkdef")
+    data = response.json()
+    assert len(data["collection"]["links"]) == 2
+    assert data["collection"]["links"][0]["rel"] == "self"
+    assert data["collection"]["links"][1]["rel"] == "other"

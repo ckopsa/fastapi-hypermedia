@@ -1,12 +1,32 @@
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass, field
 from typing import Any
 
 from fastapi import Request
 from pydantic import BaseModel
 
-from .cj_models import Collection, CollectionJson, Item, Link, Query, Template
+from .cj_models import (
+    Collection,
+    CollectionJson,
+    Item,
+    Link,
+    Query,
+    Template,
+    model_to_item,
+)
 from .responses import CollectionResponse
 from .transitions import TransitionManager
+
+
+@dataclass
+class LinkDef:
+    """
+    A helper class to define a link/transition.
+    """
+
+    name: str | Callable[..., Any]
+    rel: str | None = None
+    params: dict[str, Any] = field(default_factory=dict)
 
 
 class Hypermedia:
@@ -24,11 +44,13 @@ class Hypermedia:
         href: str | None = None,
         items: Sequence[BaseModel | Item | Any] | None = None,
         item_href: Callable[[Any], str] | None = None,
-        links: Sequence[str | Link | tuple[Any, ...] | Callable[..., Any]]
+        links: Sequence[str | Link | LinkDef | tuple[Any, ...] | Callable[..., Any]]
         | None = None,
-        queries: Sequence[str | Query | tuple[Any, ...] | Callable[..., Any]]
+        queries: Sequence[str | Query | LinkDef | tuple[Any, ...] | Callable[..., Any]]
         | None = None,
-        templates: Sequence[str | Template | tuple[Any, ...] | Callable[..., Any]]
+        templates: Sequence[
+            str | Template | LinkDef | tuple[Any, ...] | Callable[..., Any]
+        ]
         | None = None,
         error: Any = None,
     ) -> CollectionResponse:
@@ -40,9 +62,9 @@ class Hypermedia:
             href: The URI of the collection (default: current request URL).
             items: A list of items (Pydantic models, Items, or objects with to_cj_data).
             item_href: A function to generate the HREF for an item.
-            links: A list of links (Link objects, route names, or (route_name, rel) tuples).
-            queries: A list of queries (Query objects, route names, or (route_name, rel) tuples).
-            templates: A list of templates (Template objects, route names, or (route_name, rel) tuples).
+            links: A list of links (Link objects, LinkDef, route names, or (route_name, rel) tuples).
+            queries: A list of queries (Query objects, LinkDef, route names, or (route_name, rel) tuples).
+            templates: A list of templates (Template objects, LinkDef, route names, or (route_name, rel) tuples).
             error: An optional error object.
 
         Returns:
@@ -66,9 +88,14 @@ class Hypermedia:
         href: str | None = None,
         items: Sequence[BaseModel | Item | Any] | None = None,
         item_href: Callable[[Any], str] | None = None,
-        links: Sequence[str | Link | tuple[Any, ...] | Callable[..., Any]] | None = None,
-        queries: Sequence[str | Query | tuple[Any, ...] | Callable[..., Any]] | None = None,
-        templates: Sequence[str | Template | tuple[Any, ...] | Callable[..., Any]] | None = None,
+        links: Sequence[str | Link | LinkDef | tuple[Any, ...] | Callable[..., Any]]
+        | None = None,
+        queries: Sequence[str | Query | LinkDef | tuple[Any, ...] | Callable[..., Any]]
+        | None = None,
+        templates: Sequence[
+            str | Template | LinkDef | tuple[Any, ...] | Callable[..., Any]
+        ]
+        | None = None,
         error: Any = None,
     ) -> CollectionJson:
         """
@@ -79,9 +106,9 @@ class Hypermedia:
             href: The URI of the collection (default: current request URL).
             items: A list of items (Pydantic models, Items, or objects with to_cj_data).
             item_href: A function to generate the HREF for an item.
-            links: A list of links (Link objects, route names, or (route_name, rel) tuples).
-            queries: A list of queries (Query objects, route names, or (route_name, rel) tuples).
-            templates: A list of templates (Template objects, route names, or (route_name, rel) tuples).
+            links: A list of links (Link objects, LinkDef, route names, or (route_name, rel) tuples).
+            queries: A list of queries (Query objects, LinkDef, route names, or (route_name, rel) tuples).
+            templates: A list of templates (Template objects, LinkDef, route names, or (route_name, rel) tuples).
             error: An optional error object.
 
         Returns:
@@ -122,10 +149,14 @@ class Hypermedia:
             elif hasattr(item, "to_cj_data"):
                 href = href_factory(item) if href_factory else ""
                 cj_items.append(item.to_cj_data(href=href))
+            elif isinstance(item, BaseModel):
+                href = href_factory(item) if href_factory else ""
+                cj_items.append(model_to_item(item, href=href))
         return cj_items
 
     def _process_links(
-        self, links: Sequence[str | Link | tuple[Any, ...] | Callable[..., Any]]
+        self,
+        links: Sequence[str | Link | LinkDef | tuple[Any, ...] | Callable[..., Any]],
     ) -> list[Link]:
         cj_links: list[Link] = []
         for link in links:
@@ -138,7 +169,8 @@ class Hypermedia:
         return cj_links
 
     def _process_queries(
-        self, queries: Sequence[str | Query | tuple[Any, ...] | Callable[..., Any]]
+        self,
+        queries: Sequence[str | Query | LinkDef | tuple[Any, ...] | Callable[..., Any]],
     ) -> list[Query]:
         cj_queries: list[Query] = []
         for query in queries:
@@ -154,7 +186,10 @@ class Hypermedia:
         return cj_queries
 
     def _process_templates(
-        self, templates: Sequence[str | Template | tuple[Any, ...] | Callable[..., Any]]
+        self,
+        templates: Sequence[
+            str | Template | LinkDef | tuple[Any, ...] | Callable[..., Any]
+        ],
     ) -> list[Template]:
         cj_templates: list[Template] = []
         for template in templates:
@@ -174,7 +209,11 @@ class Hypermedia:
         rel: str | None = None
         params: dict[str, Any] = {}
 
-        if isinstance(arg, str) or callable(arg):
+        if isinstance(arg, LinkDef):
+            name = arg.name
+            rel = arg.rel
+            params = arg.params
+        elif isinstance(arg, str) or callable(arg):
             name = arg
         elif isinstance(arg, tuple):
             if len(arg) == 2:

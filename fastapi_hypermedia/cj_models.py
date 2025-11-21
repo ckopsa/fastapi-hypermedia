@@ -104,15 +104,14 @@ class CollectionJson(BaseModel):
     error: Error | None = PydanticField(None, description="Error details, if any")
 
 
-def to_collection_json_data(
-    self: BaseModel, href: str = "", links: list[Link] | None = None, rel: str = "item"
+def model_to_item(
+    model: BaseModel, href: str = "", links: list[Link] | None = None, rel: str = "item"
 ) -> Item:
     """
     Converts a Pydantic model instance into a Collection+JSON 'data' array.
-    'self' will be the model instance when this is called.
     """
-    schema = self.model_json_schema()
-    model_dict = self.model_dump()
+    schema = model.model_json_schema()
+    model_dict = model.model_dump()
     cj_data = []
 
     for name, definition in schema.get("properties", {}).items():
@@ -134,4 +133,12 @@ def to_collection_json_data(
     )
 
 
-BaseModel.to_cj_data = to_collection_json_data  # type: ignore[attr-defined]
+class HypermediaItem(BaseModel):
+    """
+    A Pydantic model that can be converted to a Collection+JSON Item.
+    """
+
+    def to_cj_data(
+        self, href: str = "", links: list[Link] | None = None, rel: str = "item"
+    ) -> Item:
+        return model_to_item(self, href=href, links=links, rel=rel)

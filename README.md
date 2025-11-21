@@ -10,16 +10,18 @@ A FastAPI extension for building hypermedia APIs using the Collection+JSON forma
 
 ## Installation
 
-Install the package using pip:
+Since the package is not yet published to PyPI, you can install it directly from GitHub.
+
+Using pip:
 
 ```bash
-pip install fastapi-hypermedia
+pip install git+https://github.com/ckopsa/fastapi-hypermedia.git
 ```
 
 Or using `uv`:
 
 ```bash
-uv add fastapi-hypermedia
+uv add git+https://github.com/ckopsa/fastapi-hypermedia.git
 ```
 
 ## Usage

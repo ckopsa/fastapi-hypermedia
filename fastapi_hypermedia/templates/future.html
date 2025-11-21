@@ -1,0 +1,559 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{{ title | default('Hyper-WIMP: Command Native') }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        /* --- HYPER-WIMP CORE STYLES --- */
+        @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@100;400;700&display=swap');
+
+        :root {
+            --neon-cyan: #00f3ff;
+            --neon-pink: #ff00aa;
+            --neon-green: #0aff0a;
+            --glass-bg: rgba(15, 23, 42, 0.8);
+            --glass-border: rgba(255, 255, 255, 0.1);
+        }
+
+        body {
+            background-color: #020204;
+            background-image:
+                    linear-gradient(rgba(0, 243, 255, 0.02) 1px, transparent 1px),
+                    linear-gradient(90deg, rgba(0, 243, 255, 0.02) 1px, transparent 1px);
+            background-size: 40px 40px;
+            color: #e2e8f0;
+            font-family: 'JetBrains Mono', monospace;
+            overflow: hidden;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* --- CENTRAL STAGE (Where items appear) --- */
+        #main-stage {
+            position: fixed;
+            top: 0; left: 0; width: 100%; height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            pointer-events: none; /* Let clicks pass through to background if empty */
+        }
+
+        /* --- ITEM CONTAINER (ZUI VIEW) --- */
+        .item-view {
+            width: 80vw;
+            height: 80vh;
+            background: rgba(5, 5, 8, 0.95);
+            border: 1px solid var(--neon-cyan);
+            border-top: 4px solid var(--neon-cyan);
+            box-shadow: 0 0 50px rgba(0, 243, 255, 0.1);
+            backdrop-filter: blur(20px);
+            padding: 3rem;
+            overflow-y: auto;
+            pointer-events: auto;
+            opacity: 0;
+            transform: scale(0.95) translateY(20px);
+            transition: all 0.4s cubic-bezier(0.16, 1, 0.3, 1);
+            display: none; /* Hidden by default */
+        }
+
+        .item-view.active {
+            display: block;
+            opacity: 1;
+            transform: scale(1) translateY(0);
+        }
+
+        /* --- IDLE STATE ANIMATION --- */
+        #idle-state {
+            text-align: center;
+            opacity: 0.5;
+            transition: opacity 0.5s;
+        }
+        #idle-state.hidden { opacity: 0; }
+
+        .breathing-text { animation: breathe 3s infinite ease-in-out; }
+        @keyframes breathe { 0%, 100% { opacity: 0.3; } 50% { opacity: 0.8; } }
+
+        /* --- HUD (COMMAND PALETTE) --- */
+        #hud-overlay {
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.85); backdrop-filter: blur(8px);
+            display: flex; justify-content: center; align-items: flex-start;
+            padding-top: 15vh;
+            z-index: 100; opacity: 0; pointer-events: none; transition: 0.2s;
+        }
+        #hud-overlay.active { opacity: 1; pointer-events: auto; }
+
+        .hud-box {
+            width: 700px;
+            max-height: 70vh;
+            display: flex;
+            flex-direction: column;
+            background: #0a0f1e;
+            border: 1px solid var(--neon-pink);
+            box-shadow: 0 0 60px rgba(255, 0, 170, 0.15);
+        }
+
+        .hud-scroll-area { overflow-y: auto; flex-grow: 1; }
+
+        /* --- HUD ENTRIES --- */
+        .hud-section-title {
+            font-size: 0.65rem;
+            text-transform: uppercase;
+            letter-spacing: 0.1em;
+            color: #64748b;
+            margin: 1rem 1rem 0.5rem 1rem;
+            padding-bottom: 0.25rem;
+            border-bottom: 1px solid #1e293b;
+        }
+
+        .hud-entry {
+            padding: 0.75rem 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-left: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.1s;
+        }
+
+        .hud-entry:hover, .hud-entry.selected {
+            background: rgba(255, 0, 170, 0.05);
+            border-left-color: var(--neon-pink);
+        }
+
+        .hud-entry.selected .hud-icon { color: var(--neon-pink); }
+        .hud-entry.selected .hud-text { color: white; }
+
+        .hud-icon { width: 24px; text-align: center; margin-right: 1rem; color: #475569; }
+        .hud-text { color: #94a3b8; font-size: 0.9rem; }
+        .hud-meta { font-size: 0.7rem; color: #475569; font-family: sans-serif; border: 1px solid #1e293b; padding: 1px 4px; border-radius: 3px;}
+
+        /* --- FORM INPUT STYLING --- */
+        .cyber-input {
+            background: rgba(0,0,0,0.3);
+            border: 1px solid #334155;
+            color: var(--neon-cyan);
+            font-family: 'JetBrains Mono', monospace;
+            width: 100%;
+            padding: 0.5rem;
+            font-size: 0.9rem;
+        }
+        .cyber-input:focus {
+            border-color: var(--neon-pink);
+            outline: none;
+        }
+
+        /* --- SCROLLBAR HIDE --- */
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #334155; }
+
+    </style>
+</head>
+<body>
+
+<!-- HEADER (MINIMAL) -->
+<div class="fixed top-0 left-0 w-full h-12 flex items-center justify-between px-6 z-0">
+    <div class="text-[10px] text-gray-600 tracking-widest">HYPER_WIMP // CMD_MODE</div>
+    <div class="text-[10px] text-gray-600 tracking-widest" id="clock">00:00:00</div>
+</div>
+
+<!-- MAIN STAGE (Where items load) -->
+<div id="main-stage">
+    <!-- IDLE STATE -->
+    <div id="idle-state">
+        <div class="text-4xl text-gray-700 font-bold mb-2 tracking-widest">SYSTEM READY</div>
+        <div class="text-sm text-pink-500 breathing-text">[ PRESS SPACE TO INITIALIZE ]</div>
+    </div>
+
+    <!-- DYNAMIC CONTENT CONTAINER -->
+    <!-- Content from #data-store is cloned here -->
+    <div id="active-item-container" class="w-full h-full flex justify-center items-center pointer-events-none"></div>
+</div>
+
+<!-- HIDDEN DATA STORE (Holds all HTML for items) -->
+<div id="data-store" style="display: none;">
+    {% if collection and collection.items %}
+        {% for item in collection.items %}
+
+            <!-- Generate a Unique ID for each item -->
+            <div id="item-{{ loop.index }}" class="item-view">
+                <!-- Item Header -->
+                <div class="flex justify-between items-center mb-8 border-b border-gray-800 pb-4">
+                    <div>
+                        <div class="text-xs text-cyan-500 mb-1">RECORD_ID: {{ loop.index }}</div>
+                        {% set title = item.data | selectattr("name", "equalto", "title") | map(attribute="value") | first %}
+                        <h1 class="text-3xl font-bold text-white glitch">{{ title | default('UNTITLED_RECORD') }}</h1>
+                    </div>
+                    <button onclick="closeItem()" class="text-xs border border-red-900 text-red-500 px-3 py-1 hover:bg-red-900 hover:text-white transition">
+                        CLOSE [ESC]
+                    </button>
+                </div>
+
+                <!-- Data Grid -->
+                <div class="grid grid-cols-3 gap-8">
+                    <!-- Metadata Column -->
+                    <div class="col-span-2 prose prose-invert max-w-none">
+                        {% if item.data %}
+                            <dl class="grid grid-cols-1 gap-4">
+                                {% for data_point in item.data %}
+                                    <div {% if data_point.render_hint == 'hidden' %}hidden{% endif %}>
+                                        <dt class="text-[10px] text-gray-500 uppercase tracking-wider">{{ data_point.prompt or data_point.name }}</dt>
+                                        <dd class="text-gray-200 border-l border-gray-700 pl-3 mt-1 font-mono">
+                                            {{ data_point.value }}
+                                        </dd>
+                                    </div>
+                                {% endfor %}
+                            </dl>
+                        {% endif %}
+                    </div>
+
+                    <!-- Actions Column -->
+                    <div class="col-span-1 border-l border-gray-800 pl-8">
+                        <div class="text-[10px] text-pink-500 uppercase tracking-wider mb-4">Executables</div>
+                        {% if item.links %}
+                            <div class="space-y-2">
+                                {% for link in item.links %}
+                                    {% if link.method == "GET" %}
+                                        <a href="{{ link.href }}" class="block p-3 border border-gray-800 hover:border-cyan-400 bg-black/20 transition group">
+                                            <div class="flex justify-between items-center">
+                                                <span class="text-sm text-gray-400 group-hover:text-white">{{ link.prompt | default(link.rel) }}</span>
+                                                <i class="fas fa-arrow-right text-xs text-gray-600 group-hover:text-cyan-400"></i>
+                                            </div>
+                                        </a>
+                                    {% else %}
+                                        <form action="{{ link.href }}" method="{{ link.method }}">
+                                            <button type="submit" class="w-full text-left p-3 border border-gray-800 hover:border-pink-500 bg-black/20 transition group">
+                                                <div class="flex justify-between items-center">
+                                                    <span class="text-sm text-gray-400 group-hover:text-white">{{ link.prompt | default(link.rel) }}</span>
+                                                    <span class="text-[9px] bg-gray-800 text-gray-500 px-1 rounded">{{ link.method }}</span>
+                                                </div>
+                                            </button>
+                                        </form>
+                                    {% endif %}
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-gray-700 text-xs italic">No actions available</div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        {% endfor %}
+    {% endif %}
+</div>
+
+<!-- HUD OVERLAY -->
+<div id="hud-overlay">
+    <div class="hud-box">
+        <!-- HUD Input -->
+        <div class="p-4 border-b border-gray-800">
+            <div class="flex items-center">
+                <i class="fas fa-terminal text-pink-500 mr-3"></i>
+                <input type="text" id="hud-filter-input"
+                       class="bg-transparent border-none w-full text-xl text-white font-mono focus:outline-none placeholder-gray-700 uppercase"
+                       placeholder="Execute Command..." autocomplete="off">
+            </div>
+        </div>
+
+        <div class="hud-scroll-area" id="hud-list">
+
+            <!-- SECTION: DATA RECORDS (ITEMS) -->
+            {% if collection and collection.items %}
+                <div class="hud-section">
+                    <div class="hud-section-title">Data Registry</div>
+                    {% for item in collection.items %}
+                        {% set title = item.data | selectattr("name", "equalto", "name") | map(attribute="value") | first %}
+                        <div class="hud-entry"
+                             onclick="loadItem('item-{{ loop.index }}')"
+                             data-filter-text="{{ title | default('item') | lower }}"
+                             data-action="item"
+                             data-target="item-{{ loop.index }}">
+                            <div class="flex items-center">
+                                <i class="fas fa-file-alt hud-icon"></i>
+                                <span class="hud-text">{{ title | default('UNTITLED_RECORD') }}</span>
+                            </div>
+                            <span class="hud-meta">REC</span>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- SECTION: GLOBAL LINKS -->
+            {% if collection and collection.links %}
+                <div class="hud-section">
+                    <div class="hud-section-title">System Navigation</div>
+                    {% for link in collection.links %}
+                        <a href="{{ link.href }}" class="hud-entry"
+                           data-filter-text="{{ link.prompt | default(link.rel) | lower }}">
+                            <div class="flex items-center">
+                                <i class="fas fa-link hud-icon"></i>
+                                <span class="hud-text">{{ link.prompt | default(link.rel) | upper }}</span>
+                            </div>
+                            <span class="hud-meta">LINK</span>
+                        </a>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- SECTION: QUERIES -->
+            {% if collection and collection.queries %}
+                <div class="hud-section">
+                    <div class="hud-section-title">Search Protocols</div>
+                    {% for query in collection.queries %}
+                        <div class="hud-entry" data-filter-text="{{ query.prompt | default(query.rel) | lower }}">
+                            <form action="{{ query.href }}" method="{{ query.method | default('GET') }}" class="w-full flex items-center gap-2">
+                                <i class="fas fa-search hud-icon pt-2"></i>
+                                <div class="flex-grow flex gap-2">
+                                    {% if query.data %}
+                                        {% for data_item in query.data %}
+                                            {% if data_item.render_hint == 'hidden' or data_item.input_type == 'hidden' %}
+                                                <input type="hidden" name="{{ data_item.name }}" value="{{ data_item.value | default('') }}">
+                                            {% else %}
+                                                <input type="text" name="{{ data_item.name }}"
+                                                       value="{{ data_item.value | default('') }}"
+                                                       class="cyber-input"
+                                                       placeholder="{{ data_item.prompt | default(query.prompt) }}...">
+                                            {% endif %}
+                                        {% endfor %}
+                                    {% endif %}
+                                </div>
+                                <button type="submit" style="display:none;"></button> <!-- Hidden submit for enter key -->
+                            </form>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+            <!-- SECTION: TEMPLATES -->
+            {% if template %}
+                <div class="hud-section">
+                    <div class="hud-section-title">Write Operations</div>
+                    {% for tmpl in template %}
+                        <div class="hud-entry" data-filter-text="{{ tmpl.prompt | default('new') | lower }}">
+                            <form action="{{ tmpl.href }}" method="{{ tmpl.method }}" class="w-full">
+                                <div class="flex items-center mb-2">
+                                    <i class="fas fa-pen hud-icon"></i>
+                                    <span class="hud-text text-pink-400">{{ tmpl.prompt | default('NEW_ENTRY') | upper }}</span>
+                                </div>
+
+                                <div class="pl-10 grid grid-cols-2 gap-2">
+                                    {% for data_item in tmpl.data %}
+                                        {% if data_item.render_hint == 'hidden' or data_item.input_type == 'hidden' %}
+                                            <input type="hidden" name="{{ data_item.name }}" value="{{ data_item.value | default('') }}">
+                                        {% elif data_item.render_hint == 'textarea' or data_item.input_type == 'textarea' %}
+                                            <textarea name="{{ data_item.name }}"
+                                                      class="cyber-input text-xs col-span-2"
+                                                      placeholder="{{ data_item.prompt }}">{{ data_item.value | default('') }}</textarea>
+                                        {% else %}
+                                            <input type="{{ data_item.input_type | default('text') }}"
+                                                   name="{{ data_item.name }}"
+                                                   value="{{ data_item.value | default('') }}"
+                                                   class="cyber-input text-xs"
+                                                   placeholder="{{ data_item.prompt }}">
+                                        {% endif %}
+                                    {% endfor %}
+                                </div>
+                                <button type="submit" style="display:none;"></button>
+                            </form>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% endif %}
+
+        </div>
+
+        <!-- FOOTER -->
+        <div class="p-2 bg-gray-900 border-t border-gray-800 flex justify-between text-[10px] text-gray-500 px-4">
+            <span>TOTAL RECORDS: {{ collection.items | length if collection.items else 0 }}</span>
+            <span>[ARROWS] SELECT &nbsp; [ENTER] EXECUTE</span>
+        </div>
+    </div>
+</div>
+
+<!-- MACRO FOR INPUTS (Used in hidden store) -->
+{% macro render_input(data_item, id_prefix) %}
+    <!-- (Preserved for compatibility if needed, though strictly not used in new layout) -->
+{% endmacro %}
+
+<script>
+    /* --- CLOCK --- */
+    setInterval(() => {
+        document.getElementById('clock').innerText = new Date().toLocaleTimeString('en-US', {hour12:false});
+    }, 1000);
+
+    /* --- CORE LOGIC --- */
+    const hud = document.getElementById('hud-overlay');
+    const hudInput = document.getElementById('hud-filter-input');
+    const idleState = document.getElementById('idle-state');
+    const activeContainer = document.getElementById('active-item-container');
+    let selectedIndex = 0;
+
+    // 1. Load Item Logic
+    function loadItem(itemId) {
+        // Close HUD
+        closeHud();
+
+        // Hide Idle State
+        idleState.classList.add('hidden');
+
+        // Get Content from Store
+        const sourceNode = document.getElementById(itemId);
+        if(!sourceNode) return;
+
+        // Clone content (or move it) to main stage
+        // We clone to allow multiple openings without losing state if we wanted history
+        // But simpler here: Clear container, InnerHTML
+        activeContainer.innerHTML = '';
+        activeContainer.style.pointerEvents = 'auto';
+
+        // We clone the node to ensure ID conflicts don't break logic if we had scripts inside
+        const clone = sourceNode.cloneNode(true);
+        clone.style.display = 'block';
+
+        // Small delay for animation
+        activeContainer.appendChild(clone);
+        requestAnimationFrame(() => {
+            clone.classList.add('active');
+        });
+    }
+
+    function closeItem() {
+        activeContainer.innerHTML = '';
+        activeContainer.style.pointerEvents = 'none';
+        idleState.classList.remove('hidden');
+    }
+
+    // 2. HUD Logic
+    function openHud() {
+        hud.classList.add('active');
+        hudInput.value = '';
+        filterHud('');
+        hudInput.focus();
+        selectedIndex = 0;
+        updateSelection();
+    }
+
+    function closeHud() {
+        hud.classList.remove('active');
+    }
+
+    function filterHud(text) {
+        const entries = document.querySelectorAll('.hud-entry');
+        entries.forEach(entry => {
+            const filterText = entry.getAttribute('data-filter-text');
+            // Simple substring match
+            if(filterText && filterText.includes(text.toLowerCase())) {
+                entry.style.display = 'flex'; // or block
+            } else {
+                entry.style.display = 'none';
+            }
+        });
+        // Hide empty titles
+        document.querySelectorAll('.hud-section').forEach(sec => {
+            const visible = sec.querySelectorAll('.hud-entry[style="display: flex;"], .hud-entry:not([style*="display: none"])');
+            const title = sec.querySelector('.hud-section-title');
+            if(title) title.style.display = visible.length > 0 ? 'block' : 'none';
+        });
+
+        selectedIndex = 0;
+        updateSelection();
+    }
+
+    function updateSelection() {
+        const visible = Array.from(document.querySelectorAll('.hud-entry:not([style*="display: none"])'));
+        document.querySelectorAll('.hud-entry.selected').forEach(el => el.classList.remove('selected'));
+
+        if(visible.length > 0) {
+            if(selectedIndex >= visible.length) selectedIndex = 0;
+            if(selectedIndex < 0) selectedIndex = visible.length - 1;
+
+            const el = visible[selectedIndex];
+            el.classList.add('selected');
+            el.scrollIntoView({block: "nearest"});
+        }
+    }
+
+    function executeSelection() {
+        const selected = document.querySelector('.hud-entry.selected');
+        if(!selected) return;
+
+        // If Item Data Record
+        if(selected.dataset.action === 'item') {
+            loadItem(selected.dataset.target);
+            return;
+        }
+
+        // If Link
+        if(selected.tagName === 'A') {
+            selected.click();
+            return;
+        }
+
+        // If Form Container (Query/Template)
+        const form = selected.querySelector('form');
+        if(form) {
+            // If user is already focused in an input, submit
+            if(document.activeElement.tagName === 'INPUT') {
+                const submitBtn = form.querySelector('button[type="submit"]');
+                if(submitBtn) submitBtn.click();
+            } else {
+                // Focus first input
+                const input = form.querySelector('input:not([type="hidden"])');
+                if(input) input.focus();
+            }
+        }
+    }
+
+    // 3. Input Listeners
+    hudInput.addEventListener('input', (e) => filterHud(e.target.value));
+
+    document.addEventListener('keydown', (e) => {
+        // SPACE to Open
+        if (e.code === 'Space' && !e.target.matches('input, textarea')) {
+            e.preventDefault();
+            openHud();
+        }
+
+        // ESC to Close Everything
+        if (e.code === 'Escape') {
+            if(hud.classList.contains('active')) {
+                closeHud();
+            } else {
+                closeItem();
+            }
+        }
+
+        // HUD Nav
+        if (hud.classList.contains('active')) {
+            if(e.code === 'ArrowDown') {
+                e.preventDefault();
+                selectedIndex++;
+                updateSelection();
+            } else if(e.code === 'ArrowUp') {
+                e.preventDefault();
+                selectedIndex--;
+                updateSelection();
+            } else if(e.code === 'Enter') {
+                // If focused on main input or a selected row (not inside a form input)
+                if(document.activeElement === hudInput || document.activeElement.classList.contains('hud-box')) {
+                    e.preventDefault();
+                    executeSelection();
+                }
+                // Note: If user is focused inside a form input (Template/Query), Enter naturally submits the form.
+            }
+        }
+    });
+
+    // Click outside
+    hud.addEventListener('click', (e) => {
+        if(e.target === hud) closeHud();
+    });
+
+</script>
+</body>
+</html>

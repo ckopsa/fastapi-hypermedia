@@ -27,7 +27,7 @@ class Representor:
                     )
         # Use template-based rendering
         return await self.html_renderer.render(
-            "cj_template.html",
+            "future.html",
             self.request,
             {
                 "collection": collection_json.collection,

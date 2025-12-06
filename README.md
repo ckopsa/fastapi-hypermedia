@@ -64,6 +64,34 @@ async def legacy(request: Request):
 
 For a complete working example, check the `examples/app` directory.
 
+## Using the Example App as a Starter
+
+The `examples/app` directory contains a complete FastAPI application that you can use as a template for your own projects.
+
+### Getting Started
+
+1.  **Copy the directory**:
+    ```bash
+    cp -r examples/app my-new-app
+    cd my-new-app
+    ```
+
+2.  **Install dependencies**:
+    The example app uses `uv` for dependency management.
+    ```bash
+    uv pip install -r requirements.txt
+    ```
+
+3.  **Run with Docker Compose**:
+    The easiest way to get the application running, including the database, is with Docker Compose.
+    ```bash
+    docker-compose up --build
+    ```
+    The app will be available at http://localhost:5000.
+
+4.  **Customize your application**:
+    From here, you can start modifying the code in `my-new-app` to fit your needs. You'll likely want to start by updating the models in `models.py`, the database schemas in `db_models/`, and the API routes in `routers/`.
+
 ## Development
 
 This project is set up with modern python tooling.

@@ -1,10 +1,13 @@
-"""Developer acceptance tests for HTML rendering"""
-
-from fastapi import Request
+from bs4 import BeautifulSoup
+from fastapi import Depends, FastAPI, Form, Request
 from fastapi.responses import HTMLResponse
+from fastapi.testclient import TestClient
 
-from fastapi_hypermedia import cj_models
+from fastapi_hypermedia import Hypermedia, cj_models
+from fastapi_hypermedia.templating import get_templates
 from tests.helpers.html_validator import has_html_form, has_html_links
+
+"""Developer acceptance tests for HTML rendering"""
 
 
 def render_cj_as_html(collection_json):
@@ -98,3 +101,69 @@ def test_developer_can_include_forms_in_html_rendering(test_app, test_client):
     assert 'method="POST"' in html_content  # Should have the template form
     assert 'name="name"' in html_content  # Form fields
     assert 'name="description"' in html_content
+
+
+app = FastAPI()
+
+templates = get_templates()
+
+
+@app.post("/submit", name="submit_form", operation_id="submit_form")
+async def submit_form(
+    name: str = Form(...),
+    email: str = Form(...),
+    optional_field: str | None = Form(None),
+):
+    return {"message": "Success"}
+
+
+@app.get("/", name="root", operation_id="root", response_class=HTMLResponse)
+async def root(request: Request, hm: Hypermedia = Depends(Hypermedia)):
+    cj = hm.create_collection_json(
+        title="Required Field Test",
+        templates=["submit_form"],
+    )
+    return templates.TemplateResponse(
+        "cj_template.html",
+        {"request": request, "collection": cj.collection, "template": cj.template},
+    )
+
+
+client = TestClient(app)
+
+
+def test_required_fields_rendering():
+    response = client.get("/")
+    assert response.status_code == 200
+    html = response.text
+    soup = BeautifulSoup(html, "html.parser")
+
+    # Check 'name' field
+    name_label = soup.find("label", attrs={"for": "template_page_1_name"})
+    assert name_label is not None
+    assert "*" in name_label.text
+
+    name_input = soup.find("input", attrs={"name": "name"})
+    assert name_input is not None
+    assert name_input.has_attr("required")
+    assert name_input["aria-required"] == "true"
+
+    # Check 'email' field
+    email_label = soup.find("label", attrs={"for": "template_page_2_email"})
+    assert email_label is not None
+    assert "*" in email_label.text
+
+    email_input = soup.find("input", attrs={"name": "email"})
+    assert email_input is not None
+    assert email_input.has_attr("required")
+    assert email_input["aria-required"] == "true"
+
+    # Check 'optional_field' field
+    optional_label = soup.find("label", attrs={"for": "template_page_3_optional_field"})
+    assert optional_label is not None
+    assert "*" not in optional_label.text
+
+    optional_input = soup.find("input", attrs={"name": "optional_field"})
+    assert optional_input is not None
+    assert not optional_input.has_attr("required")
+    assert not optional_input.has_attr("aria-required")

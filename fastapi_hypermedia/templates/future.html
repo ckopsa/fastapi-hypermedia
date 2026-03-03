@@ -189,7 +189,7 @@
                         {% set title = item.data | selectattr("name", "equalto", "title") | map(attribute="value") | first %}
                         <h1 class="text-3xl font-bold text-white glitch">{{ title | default('UNTITLED_RECORD') }}</h1>
                     </div>
-                    <button onclick="closeItem()" class="text-xs border border-red-900 text-red-500 px-3 py-1 hover:bg-red-900 hover:text-white transition">
+                    <button onclick="closeItem()" aria-label="Close record" class="text-xs border border-red-900 text-red-500 px-3 py-1 hover:bg-red-900 hover:text-white transition">
                         CLOSE [ESC]
                     </button>
                 </div>
@@ -255,12 +255,13 @@
             <div class="flex items-center">
                 <i class="fas fa-terminal text-pink-500 mr-3"></i>
                 <input type="text" id="hud-filter-input"
+                       role="combobox" aria-expanded="false" aria-controls="hud-list" aria-autocomplete="list" aria-label="Command filter"
                        class="bg-transparent border-none w-full text-xl text-white font-mono focus:outline-none placeholder-gray-700 uppercase"
                        placeholder="Execute Command..." autocomplete="off">
             </div>
         </div>
 
-        <div class="hud-scroll-area" id="hud-list">
+        <div class="hud-scroll-area" id="hud-list" role="listbox" aria-label="Command list">
 
             <!-- SECTION: DATA RECORDS (ITEMS) -->
             {% if collection and collection.items %}
@@ -393,6 +394,14 @@
     const activeContainer = document.getElementById('active-item-container');
     let selectedIndex = 0;
 
+    // Initialize HUD Entry IDs and Roles
+    document.querySelectorAll('.hud-entry').forEach((entry, idx) => {
+        if (!entry.id) {
+            entry.id = `hud-entry-${idx}`;
+        }
+        entry.setAttribute('role', 'option');
+    });
+
     // 1. Load Item Logic
     function loadItem(itemId) {
         // Close HUD
@@ -431,6 +440,7 @@
     // 2. HUD Logic
     function openHud() {
         hud.classList.add('active');
+        hudInput.setAttribute('aria-expanded', 'true');
         hudInput.value = '';
         filterHud('');
         hudInput.focus();
@@ -440,6 +450,7 @@
 
     function closeHud() {
         hud.classList.remove('active');
+        hudInput.setAttribute('aria-expanded', 'false');
     }
 
     function filterHud(text) {
@@ -475,6 +486,9 @@
             const el = visible[selectedIndex];
             el.classList.add('selected');
             el.scrollIntoView({block: "nearest"});
+            hudInput.setAttribute('aria-activedescendant', el.id);
+        } else {
+            hudInput.removeAttribute('aria-activedescendant');
         }
     }
 

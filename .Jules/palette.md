@@ -1,0 +1,3 @@
+## 2024-05-24 - Custom Combobox Accessibility in HUD
+**Learning:** When building custom `role="combobox"` interfaces like the Hyper-WIMP command palette, simply adding `role` and `aria-controls` is insufficient for screen readers. The `aria-activedescendant` attribute must be dynamically managed via JavaScript during keyboard navigation to point to the `id` of the currently selected `role="option"` element, so screen readers announce the changing selection context accurately without moving actual browser focus away from the text input.
+**Action:** When creating similar searchable dropdowns or command palettes, always ensure dynamic assignment of `aria-activedescendant` and stable, unique IDs for all options.

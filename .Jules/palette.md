@@ -1,0 +1,3 @@
+## 2026-03-05 - Missing explicit labels in custom UI patterns
+**Learning:** In custom 'Hyper-WIMP' or cyber-themed interfaces where visual `<label>` elements are intentionally omitted for design reasons, screen reader users lose crucial context for dynamically generated form fields. Relying solely on `placeholder` attributes is insufficient for accessibility.
+**Action:** Always bind the template variable (e.g., `data_item.prompt` or `data_item.name`) to the `aria-label` attribute of dynamically generated `input` and `textarea` elements whenever explicit `<label>` elements are missing from the template design.

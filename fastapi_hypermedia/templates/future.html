@@ -189,7 +189,7 @@
                         {% set title = item.data | selectattr("name", "equalto", "title") | map(attribute="value") | first %}
                         <h1 class="text-3xl font-bold text-white glitch">{{ title | default('UNTITLED_RECORD') }}</h1>
                     </div>
-                    <button onclick="closeItem()" class="text-xs border border-red-900 text-red-500 px-3 py-1 hover:bg-red-900 hover:text-white transition">
+                    <button onclick="closeItem()" aria-label="Close record" class="text-xs border border-red-900 text-red-500 px-3 py-1 hover:bg-red-900 hover:text-white transition">
                         CLOSE [ESC]
                     </button>
                 </div>
@@ -254,7 +254,7 @@
         <div class="p-4 border-b border-gray-800">
             <div class="flex items-center">
                 <i class="fas fa-terminal text-pink-500 mr-3"></i>
-                <input type="text" id="hud-filter-input"
+                <input type="text" id="hud-filter-input" aria-label="Filter commands"
                        class="bg-transparent border-none w-full text-xl text-white font-mono focus:outline-none placeholder-gray-700 uppercase"
                        placeholder="Execute Command..." autocomplete="off">
             </div>
@@ -314,7 +314,7 @@
                                             {% if data_item.render_hint == 'hidden' or data_item.input_type == 'hidden' %}
                                                 <input type="hidden" name="{{ data_item.name }}" value="{{ data_item.value | default('') }}">
                                             {% else %}
-                                                <input type="text" name="{{ data_item.name }}"
+                                                <input type="text" name="{{ data_item.name }}" aria-label="{{ data_item.prompt | default(query.prompt) }}"
                                                        value="{{ data_item.value | default('') }}"
                                                        class="cyber-input"
                                                        placeholder="{{ data_item.prompt | default(query.prompt) }}...">
@@ -346,12 +346,12 @@
                                         {% if data_item.render_hint == 'hidden' or data_item.input_type == 'hidden' %}
                                             <input type="hidden" name="{{ data_item.name }}" value="{{ data_item.value | default('') }}">
                                         {% elif data_item.render_hint == 'textarea' or data_item.input_type == 'textarea' %}
-                                            <textarea name="{{ data_item.name }}"
+                                            <textarea name="{{ data_item.name }}" aria-label="{{ data_item.prompt }}"
                                                       class="cyber-input text-xs col-span-2"
                                                       placeholder="{{ data_item.prompt }}">{{ data_item.value | default('') }}</textarea>
                                         {% else %}
                                             <input type="{{ data_item.input_type | default('text') }}"
-                                                   name="{{ data_item.name }}"
+                                                   name="{{ data_item.name }}" aria-label="{{ data_item.prompt }}"
                                                    value="{{ data_item.value | default('') }}"
                                                    class="cyber-input text-xs"
                                                    placeholder="{{ data_item.prompt }}">

@@ -78,8 +78,8 @@
     {% if collection.items %}
     {% for item in collection.items %}
     <div class="item outline outline-gray-800 rounded-md p-4 mb-10">
-        <h3 class="text-xl mb-3" hidden>
-            <a href="{{ item.href }}" class="text-purple-400 hover:text-orange-400 hover:underline transition-colors duration-200">Navigate to Instance</a>
+        <h3 class="text-xl mb-3">
+            <a href="{{ item.href }}" class="text-purple-400 hover:text-orange-400 hover:underline transition-colors duration-200">{{ item.prompt or 'Navigate to Instance' }}</a>
         </h3>
         {% if item.data %}
         {% for data_point in item.data %}

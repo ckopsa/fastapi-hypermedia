@@ -36,10 +36,19 @@ app = FastAPI()
 
 @app.get("/", name="root")
 async def root(request: Request, hm: Hypermedia = Depends(Hypermedia)):
+    # Simple collection with automatic item HREF and prompt generation
+    items = [{"id": 1, "name": "Item 1"}, {"id": 2, "name": "Item 2"}]
     return hm.create_collection_response(
         title="My API",
+        items=items,
+        item_href=lambda x: str(request.url_for("get_item", item_id=x["id"])),
+        item_prompt=lambda x: f"View {x['name']}",
         links=["root"]
     )
+
+@app.get("/items/{item_id}", name="get_item")
+async def get_item(item_id: int):
+    return {"id": item_id, "name": f"Item {item_id}"}
 ```
 
 Legacy usage (direct model manipulation) is also supported:

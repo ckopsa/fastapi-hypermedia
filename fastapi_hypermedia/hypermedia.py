@@ -44,6 +44,7 @@ class Hypermedia:
         href: str | None = None,
         items: Sequence[BaseModel | Item | Any] | None = None,
         item_href: Callable[[Any], str] | None = None,
+        item_prompt: Callable[[Any], str] | None = None,
         links: Sequence[str | Link | LinkDef | tuple[Any, ...] | Callable[..., Any]]
         | None = None,
         queries: Sequence[str | Query | LinkDef | tuple[Any, ...] | Callable[..., Any]]
@@ -62,6 +63,7 @@ class Hypermedia:
             href: The URI of the collection (default: current request URL).
             items: A list of items (Pydantic models, Items, or objects with to_cj_data).
             item_href: A function to generate the HREF for an item.
+            item_prompt: A function to generate the prompt (label) for an item's HREF.
             links: A list of links (Link objects, LinkDef, route names, or (route_name, rel) tuples).
             queries: A list of queries (Query objects, LinkDef, route names, or (route_name, rel) tuples).
             templates: A list of templates (Template objects, LinkDef, route names, or (route_name, rel) tuples).
@@ -75,6 +77,7 @@ class Hypermedia:
             href=href,
             items=items,
             item_href=item_href,
+            item_prompt=item_prompt,
             links=links,
             queries=queries,
             templates=templates,
@@ -88,6 +91,7 @@ class Hypermedia:
         href: str | None = None,
         items: Sequence[BaseModel | Item | Any] | None = None,
         item_href: Callable[[Any], str] | None = None,
+        item_prompt: Callable[[Any], str] | None = None,
         links: Sequence[str | Link | LinkDef | tuple[Any, ...] | Callable[..., Any]]
         | None = None,
         queries: Sequence[str | Query | LinkDef | tuple[Any, ...] | Callable[..., Any]]
@@ -106,6 +110,7 @@ class Hypermedia:
             href: The URI of the collection (default: current request URL).
             items: A list of items (Pydantic models, Items, or objects with to_cj_data).
             item_href: A function to generate the HREF for an item.
+            item_prompt: A function to generate the prompt (label) for an item's HREF.
             links: A list of links (Link objects, LinkDef, route names, or (route_name, rel) tuples).
             queries: A list of queries (Query objects, LinkDef, route names, or (route_name, rel) tuples).
             templates: A list of templates (Template objects, LinkDef, route names, or (route_name, rel) tuples).
@@ -120,7 +125,7 @@ class Hypermedia:
         queries = queries or []
         templates = templates or []
 
-        cj_items = self._process_items(items, item_href)
+        cj_items = self._process_items(items, item_href, item_prompt)
         cj_links = self._process_links(links)
         cj_queries = self._process_queries(queries)
         cj_templates = self._process_templates(templates)
@@ -140,7 +145,10 @@ class Hypermedia:
         )
 
     def _process_items(
-        self, items: Sequence[Any], href_factory: Callable[[Any], str] | None
+        self,
+        items: Sequence[Any],
+        href_factory: Callable[[Any], str] | None,
+        prompt_factory: Callable[[Any], str] | None = None,
     ) -> list[Item]:
         cj_items: list[Item] = []
         for item in items:
@@ -148,10 +156,12 @@ class Hypermedia:
                 cj_items.append(item)
             elif hasattr(item, "to_cj_data"):
                 href = href_factory(item) if href_factory else ""
-                cj_items.append(item.to_cj_data(href=href))
+                prompt = prompt_factory(item) if prompt_factory else None
+                cj_items.append(item.to_cj_data(href=href, prompt=prompt))
             elif isinstance(item, BaseModel):
                 href = href_factory(item) if href_factory else ""
-                cj_items.append(model_to_item(item, href=href))
+                prompt = prompt_factory(item) if prompt_factory else None
+                cj_items.append(model_to_item(item, href=href, prompt=prompt))
         return cj_items
 
     def _process_links(

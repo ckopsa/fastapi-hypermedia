@@ -65,6 +65,9 @@ class Query(BaseModel):
 class Item(BaseModel):
     href: str
     rel: str
+    prompt: str | None = PydanticField(
+        None, description="Human readable prompt for the item's href"
+    )
     data: list[ItemData] = PydanticField(default_factory=list)
     links: list[Link] = PydanticField(default_factory=list)
 
@@ -105,7 +108,11 @@ class CollectionJson(BaseModel):
 
 
 def model_to_item(
-    model: BaseModel, href: str = "", links: list[Link] | None = None, rel: str = "item"
+    model: BaseModel,
+    href: str = "",
+    links: list[Link] | None = None,
+    rel: str = "item",
+    prompt: str | None = None,
 ) -> Item:
     """
     Converts a Pydantic model instance into a Collection+JSON 'data' array.
@@ -128,6 +135,7 @@ def model_to_item(
     return Item(
         href=href,
         rel=rel,
+        prompt=prompt,
         data=cj_data,
         links=links or [],
     )
@@ -139,6 +147,10 @@ class HypermediaItem(BaseModel):
     """
 
     def to_cj_data(
-        self, href: str = "", links: list[Link] | None = None, rel: str = "item"
+        self,
+        href: str = "",
+        links: list[Link] | None = None,
+        rel: str = "item",
+        prompt: str | None = None,
     ) -> Item:
-        return model_to_item(self, href=href, links=links, rel=rel)
+        return model_to_item(self, href=href, links=links, rel=rel, prompt=prompt)

@@ -1,0 +1,3 @@
+## 2026-03-10 - Screen Reader Accessibility in Label-less ZUI Design
+**Learning:** In "Hyper-WIMP" or ZUI (Zoomable User Interface) designs where explicit HTML `<label>` tags are intentionally omitted to maintain a clean, terminal-like aesthetic, screen reader accessibility completely breaks down for dynamically generated forms unless template variables are explicitly mapped to ARIA labels.
+**Action:** When creating label-less inputs from dynamic template data (e.g., `data_item.prompt`), unconditionally inject these prompts into the `aria-label` attribute to ensure assistive technologies can still announce the input's purpose without compromising the visual design.

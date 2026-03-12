@@ -1,0 +1,3 @@
+## 2024-05-18 - Accessibility mapping for Hyper-WIMP Collection+JSON inputs
+**Learning:** In custom Hyper-WIMP UIs (like `future.html`) where explicit visual `<label>` tags are omitted for design purposes, mapping the template variables (e.g., `data_item.prompt` falling back to `data_item.name`) directly to the `aria-label` attribute on the input elements is a crucial pattern for ensuring screen reader accessibility.
+**Action:** Always ensure that when designing custom visually label-less forms, `aria-label` is populated from the corresponding prompt or name of the input field so users with screen readers can identify what the input is for.

@@ -1,0 +1,3 @@
+## 2024-05-24 - Accessibility in Aesthetic Interfaces
+**Learning:** Aesthetic-driven templates (like Hyper-WIMP) that omit explicit HTML `<label>` elements for design purposes must use dynamically generated `aria-label` attributes to ensure screen reader accessibility. Mapping template variables (e.g., `data_item.prompt`) to these labels is a crucial pattern.
+**Action:** When implementing or reviewing custom UI templates without `<label>` elements, verify all interactive elements (buttons, inputs, textareas) have explicit `aria-label` values.

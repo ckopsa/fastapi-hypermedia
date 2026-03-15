@@ -1,0 +1,3 @@
+## 2024-05-18 - Accessibility in Label-less UI Patterns
+**Learning:** When creating highly stylized interfaces like the 'Hyper-WIMP' command palette where explicit `<label>` tags are omitted for stylistic purposes, dynamic form inputs lose essential accessibility context, making them opaque to screen readers.
+**Action:** Always map template context variables (e.g., `data_item.prompt` or `data_item.name`) directly to the `aria-label` attribute on input elements when a visible `<label>` is absent. Also, ensure structural interactive elements (like custom close buttons or filter inputs) have explicit `aria-label` definitions.

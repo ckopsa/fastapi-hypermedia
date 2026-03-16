@@ -1,0 +1,3 @@
+## 2024-05-24 - Accessibility in Custom UIs Without Explicit Labels
+**Learning:** In highly stylized or custom interfaces like the "Hyper-WIMP" command palette where explicit HTML `<label>` elements are omitted for design purposes, inputs must still be accessible. Screen readers cannot infer the purpose of these inputs without explicit association.
+**Action:** When creating or dynamically generating inputs without explicit labels (e.g., from template variables like `data_item.prompt`), always map a descriptive prompt to the `aria-label` attribute on the input elements themselves to ensure proper screen reader accessibility.

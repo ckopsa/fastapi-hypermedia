@@ -1,0 +1,3 @@
+## 2024-05-24 - Accessibility in Custom UI Overlays without Labels
+**Learning:** In custom UI templates like 'Hyper-WIMP' (`future.html`), explicit HTML `<label>` elements are often omitted for aesthetic or design purposes. This causes a critical accessibility barrier for screen readers interacting with dynamically generated forms (e.g., from Collection+JSON queries/templates) or custom inputs like search bars.
+**Action:** Always dynamically map template variables (e.g., `data_item.prompt` or a descriptive string) to the `aria-label` attribute on inputs, buttons, and textareas when visual labels are intentionally absent, ensuring that screen readers can contextualize interactive elements.

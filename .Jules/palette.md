@@ -1,0 +1,3 @@
+## 2023-10-27 - Added aria-labels to future.html templates
+**Learning:** Custom UI templates in this application often omit explicit `<label>` tags for design purposes. When implementing custom UI components like these, specifically text inputs and textareas that rely solely on placeholders, they must map template variables like `data_item.prompt` to the `aria-label` attribute to ensure screen reader accessibility.
+**Action:** Consistently review new custom UI templates for missing `<label>` tags and add `aria-label` mappings if they are absent, especially for dynamic inputs generated from JSON-based configurations.

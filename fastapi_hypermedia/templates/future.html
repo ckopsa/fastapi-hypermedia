@@ -261,7 +261,7 @@
         <div class="p-4 border-b border-gray-800">
             <div class="flex items-center">
                 <i class="fas fa-terminal text-pink-500 mr-3"></i>
-                <input type="text" id="hud-filter-input"
+                <input type="text" id="hud-filter-input" aria-label="Execute Command"
                        class="bg-transparent border-none w-full text-xl text-white font-mono focus:outline-none placeholder-gray-700 uppercase"
                        placeholder="Execute Command..." autocomplete="off">
             </div>
@@ -325,7 +325,8 @@
                                                 <input type="text" name="{{ data_item.name }}"
                                                        value="{{ data_item.value | default('') }}"
                                                        class="cyber-input"
-                                                       placeholder="{{ data_item.prompt | default(query.prompt) }}...">
+                                                       placeholder="{{ data_item.prompt | default(query.prompt) }}..."
+                                                       aria-label="{{ data_item.prompt | default(data_item.name) }}">
                                             {% endif %}
                                         {% endfor %}
                                     {% endif %}
@@ -356,13 +357,15 @@
                                         {% elif data_item.render_hint == 'textarea' or data_item.input_type == 'textarea' %}
                                             <textarea name="{{ data_item.name }}"
                                                       class="cyber-input text-xs col-span-2"
-                                                      placeholder="{{ data_item.prompt }}">{{ data_item.value | default('') }}</textarea>
+                                                      placeholder="{{ data_item.prompt }}"
+                                                      aria-label="{{ data_item.prompt | default(data_item.name) }}">{{ data_item.value | default('') }}</textarea>
                                         {% else %}
                                             <input type="{{ data_item.input_type | default('text') }}"
                                                    name="{{ data_item.name }}"
                                                    value="{{ data_item.value | default('') }}"
                                                    class="cyber-input text-xs"
-                                                   placeholder="{{ data_item.prompt }}">
+                                                   placeholder="{{ data_item.prompt }}"
+                                                   aria-label="{{ data_item.prompt | default(data_item.name) }}">
                                         {% endif %}
                                     {% endfor %}
                                 </div>

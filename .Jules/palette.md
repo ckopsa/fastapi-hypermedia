@@ -1,0 +1,3 @@
+## 2024-05-24 - Dynamic ARIA Labels in Custom UI Templates
+**Learning:** When explicit `<label>` elements are omitted for stylistic purposes in custom UI templates like Hyper-WIMP, inputs become inaccessible to screen readers.
+**Action:** Always dynamically generate `aria-label` attributes from template variables (e.g., `aria-label="{{ data_item.prompt | default(data_item.name) }}"`) for dynamically generated query and template inputs (`<input>` and `<textarea>`) to ensure accessibility while maintaining the intended visual design.

@@ -1,0 +1,32 @@
+
+   FastAPI   Starting development server 🚀
+
+             Searching for package file structure from directories with
+             __init__.py files
+             Importing from /app/examples
+
+    module   📁 app
+             ├── 🐍 __init__.py
+             └── 🐍 main.py
+
+      code   Importing the FastAPI app object from the module with the following
+             code:
+
+             from app.main import app
+
+       app   Using import string: app.main:app
+
+    server   Server started at http://127.0.0.1:8082
+    server   Documentation at http://127.0.0.1:8082/docs
+
+       tip   Running in development mode, for production use: fastapi run
+
+             Logs:
+
+      INFO   Will watch for changes in these directories: ['/app/examples/app']
+      INFO   Uvicorn running on http://127.0.0.1:8082 (Press CTRL+C to quit)
+      INFO   Started reloader process [3509] using WatchFiles
+      INFO   Started server process [3569]
+      INFO   Waiting for application startup.
+      INFO   Application startup complete.
+      INFO   127.0.0.1:34196 - "GET / HTTP/1.1" 200

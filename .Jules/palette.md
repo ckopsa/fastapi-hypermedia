@@ -1,0 +1,3 @@
+## 2026-03-23 - Dynamic ARIA Labels in Stylized UI Templates
+**Learning:** In highly stylized UI templates (like Hyper-WIMP) where standard HTML `<label>` elements are omitted for design reasons, we must dynamically map hypermedia model properties (e.g., `data_item.prompt` or `query.prompt`) to the `aria-label` attributes of the generated input elements. This ensures screen reader accessibility without compromising the intended visual aesthetic.
+**Action:** Always verify that dynamically generated inputs in custom UI templates (especially those iterating over collection data/queries/templates) explicitly bind a descriptive text (like `prompt`) to their `aria-label` attribute when explicit `<label>` elements are absent.

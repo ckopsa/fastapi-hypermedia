@@ -1,0 +1,3 @@
+## 2024-05-24 - Accessibility in Minimalist UI Patterns
+**Learning:** Minimalist UI patterns, like the Hyper-WIMP command palette, often omit visible `<label>` tags for aesthetic reasons. This creates an accessibility gap for screen readers which rely on explicit labels to announce form fields.
+**Action:** When working with or creating custom UI components that lack visible labels (e.g., custom dropdowns, command palettes, search inputs), always dynamically map template variables (like `data_item.prompt`) or provide explicit static descriptions to the `aria-label` attribute on the underlying `<input>`, `<textarea>`, or `<button>` elements to maintain screen reader accessibility without compromising the visual design.

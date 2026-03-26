@@ -1,0 +1,3 @@
+## 2024-03-26 - Missing aria-labels in custom HUD inputs
+**Learning:** Custom UI templates like Hyper-WIMP omit explicit HTML `<label>` elements for design purposes, which breaks accessibility for screen readers. Inputs in the HUD overlay and dynamic form templates lack `aria-label` attributes to associate them with their purpose.
+**Action:** When implementing custom `role='combobox'` interfaces or generic inputs in `future.html` and `cj_template.html`, dynamically generated inputs must map template variables (e.g., `data_item.prompt`) to the `aria-label` attribute to ensure screen reader accessibility. All interactive elements must have explicit `aria-label`s.

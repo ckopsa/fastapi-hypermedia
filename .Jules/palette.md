@@ -1,0 +1,3 @@
+## 2026-03-28 - Accessibility for Label-less Command Palettes
+**Learning:** In hyper-wimp/command-palette UIs where explicit HTML `<label>` elements are omitted for aesthetic reasons, screen readers lose context. Dynamically generated inputs in these templates must map dynamic template variables (e.g., `data_item.prompt`) to the `aria-label` attribute to ensure accessibility without compromising the visual design.
+**Action:** When implementing custom command palette interfaces or forms that lack visible labels, always dynamically map the corresponding title, prompt, or data item name to the `aria-label` attribute of the input fields.

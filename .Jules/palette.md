@@ -1,0 +1,3 @@
+## 2024-03-07 - Accessibility of Dynamically Generated Inputs in Design-Focused Templates
+**Learning:** When creating custom design-focused UI templates (like Hyper-WIMP) that intentionally omit explicit HTML `<label>` elements for aesthetic purposes, dynamically generated inputs (like those in Collection+JSON Queries and Templates) lack necessary context for screen readers.
+**Action:** Always map available template variables (e.g., `data_item.prompt` or `query.prompt`) to the `aria-label` attribute on inputs and textareas to ensure they remain accessible without compromising the design constraints.

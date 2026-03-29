@@ -172,7 +172,7 @@
 
     <!-- DYNAMIC CONTENT CONTAINER -->
     <!-- Content from #data-store is cloned here -->
-    <div id="active-item-container" class="w-full h-full flex justify-center items-center pointer-events-none"></div>
+    <div id="active-item-container" class="w-full h-full flex justify-center items-center pointer-events-none" role="region" aria-label="Active Item" tabindex="-1"></div>
 </div>
 
 <!-- HIDDEN DATA STORE (Holds all HTML for items) -->
@@ -229,7 +229,7 @@
                                         <a href="{{ link.href }}" class="block p-3 border border-gray-800 hover:border-cyan-400 bg-black/20 transition group">
                                             <div class="flex justify-between items-center">
                                                 <span class="text-sm text-gray-400 group-hover:text-white">{{ link.prompt | default(link.rel) }}</span>
-                                                <i class="fas fa-arrow-right text-xs text-gray-600 group-hover:text-cyan-400"></i>
+                                                <i class="fas fa-arrow-right text-xs text-gray-600 group-hover:text-cyan-400" aria-hidden="true"></i>
                                             </div>
                                         </a>
                                     {% else %}
@@ -255,15 +255,15 @@
 </div>
 
 <!-- HUD OVERLAY -->
-<div id="hud-overlay">
+<div id="hud-overlay" role="dialog" aria-modal="true" aria-label="Command Palette">
     <div class="hud-box">
         <!-- HUD Input -->
         <div class="p-4 border-b border-gray-800">
             <div class="flex items-center">
-                <i class="fas fa-terminal text-pink-500 mr-3"></i>
+                <i class="fas fa-terminal text-pink-500 mr-3" aria-hidden="true"></i>
                 <input type="text" id="hud-filter-input"
                        class="bg-transparent border-none w-full text-xl text-white font-mono focus:outline-none placeholder-gray-700 uppercase"
-                       placeholder="Execute Command..." autocomplete="off">
+                       placeholder="Execute Command..." aria-label="Filter commands" autocomplete="off">
             </div>
         </div>
 
@@ -282,7 +282,7 @@
                              data-action="item"
                              data-target="item-{{ loop.index }}">
                             <div class="flex items-center">
-                                <i class="fas fa-file-alt hud-icon"></i>
+                                <i class="fas fa-file-alt hud-icon" aria-hidden="true"></i>
                                 <span class="hud-text">{{ title | default('UNTITLED_RECORD') }}</span>
                             </div>
                             <span class="hud-meta">REC</span>
@@ -299,7 +299,7 @@
                         <a href="{{ link.href }}" class="hud-entry"
                            data-filter-text="{{ link.prompt | default(link.rel) | lower }}">
                             <div class="flex items-center">
-                                <i class="fas fa-link hud-icon"></i>
+                                <i class="fas fa-link hud-icon" aria-hidden="true"></i>
                                 <span class="hud-text">{{ link.prompt | default(link.rel) | upper }}</span>
                             </div>
                             <span class="hud-meta">LINK</span>
@@ -315,7 +315,7 @@
                     {% for query in collection.queries %}
                         <div class="hud-entry" data-filter-text="{{ query.prompt | default(query.rel) | lower }}">
                             <form action="{{ query.href }}" method="{{ query.method | default('GET') }}" class="w-full flex items-center gap-2">
-                                <i class="fas fa-search hud-icon pt-2"></i>
+                                <i class="fas fa-search hud-icon pt-2" aria-hidden="true"></i>
                                 <div class="flex-grow flex gap-2">
                                     {% if query.data %}
                                         {% for data_item in query.data %}
@@ -345,7 +345,7 @@
                         <div class="hud-entry" data-filter-text="{{ tmpl.prompt | default('new') | lower }}">
                             <form action="{{ tmpl.href }}" method="{{ tmpl.method }}" class="w-full">
                                 <div class="flex items-center mb-2">
-                                    <i class="fas fa-pen hud-icon"></i>
+                                    <i class="fas fa-pen hud-icon" aria-hidden="true"></i>
                                     <span class="hud-text text-pink-400">{{ tmpl.prompt | default('NEW_ENTRY') | upper }}</span>
                                 </div>
 
@@ -427,6 +427,7 @@
         activeContainer.appendChild(clone);
         requestAnimationFrame(() => {
             clone.classList.add('active');
+            activeContainer.focus();
         });
     }
 

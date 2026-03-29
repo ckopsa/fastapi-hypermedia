@@ -1,0 +1,3 @@
+## 2024-05-24 - Explicit ARIA Labels Needed for Data-Driven Form Elements
+**Learning:** In "hyper-wimp" or data-driven generic templates (like `future.html`), explicit HTML `<label>` elements are often omitted to maintain a specific minimalist or command-palette visual design. However, this causes screen readers to announce generic inputs (e.g. `<input type="text">` or `<textarea>`) without context.
+**Action:** Always dynamically map the template's available variable context (e.g., `data_item.prompt` or a default fallback) directly to the `aria-label` attribute on generated input fields whenever visual `<label>` tags are absent by design.

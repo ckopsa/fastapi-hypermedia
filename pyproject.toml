@@ -69,3 +69,8 @@ members = [
     "examples/app",
     ".",
 ]
+
+[dependency-groups]
+dev = [
+    "playwright>=1.58.0",
+]

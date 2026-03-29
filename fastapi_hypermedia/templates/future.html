@@ -263,11 +263,12 @@
                 <i class="fas fa-terminal text-pink-500 mr-3"></i>
                 <input type="text" id="hud-filter-input"
                        class="bg-transparent border-none w-full text-xl text-white font-mono focus:outline-none placeholder-gray-700 uppercase"
-                       placeholder="Execute Command..." autocomplete="off">
+                       placeholder="Execute Command..." autocomplete="off"
+                       role="combobox" aria-autocomplete="list" aria-expanded="false" aria-controls="hud-list" aria-haspopup="listbox">
             </div>
         </div>
 
-        <div class="hud-scroll-area" id="hud-list">
+        <div class="hud-scroll-area" id="hud-list" role="listbox">
 
             <!-- SECTION: DATA RECORDS (ITEMS) -->
             {% if collection and collection.items %}
@@ -277,10 +278,12 @@
                         {% set title_from_data = item.data | selectattr("name", "equalto", "name") | map(attribute="value") | first %}
                         {% set title = item.prompt or title_from_data %}
                         <div class="hud-entry"
+                             id="hud-opt-item-{{ loop.index }}"
                              onclick="loadItem('item-{{ loop.index }}')"
                              data-filter-text="{{ title | default('item') | lower }}"
                              data-action="item"
-                             data-target="item-{{ loop.index }}">
+                             data-target="item-{{ loop.index }}"
+                             role="option" aria-selected="false">
                             <div class="flex items-center">
                                 <i class="fas fa-file-alt hud-icon"></i>
                                 <span class="hud-text">{{ title | default('UNTITLED_RECORD') }}</span>
@@ -297,7 +300,9 @@
                     <div class="hud-section-title">System Navigation</div>
                     {% for link in collection.links %}
                         <a href="{{ link.href }}" class="hud-entry"
-                           data-filter-text="{{ link.prompt | default(link.rel) | lower }}">
+                           id="hud-opt-link-{{ loop.index }}"
+                           data-filter-text="{{ link.prompt | default(link.rel) | lower }}"
+                           role="option" aria-selected="false">
                             <div class="flex items-center">
                                 <i class="fas fa-link hud-icon"></i>
                                 <span class="hud-text">{{ link.prompt | default(link.rel) | upper }}</span>
@@ -313,7 +318,10 @@
                 <div class="hud-section">
                     <div class="hud-section-title">Search Protocols</div>
                     {% for query in collection.queries %}
-                        <div class="hud-entry" data-filter-text="{{ query.prompt | default(query.rel) | lower }}">
+                        <div class="hud-entry"
+                             id="hud-opt-query-{{ loop.index }}"
+                             data-filter-text="{{ query.prompt | default(query.rel) | lower }}"
+                             role="option" aria-selected="false">
                             <form action="{{ query.href }}" method="{{ query.method | default('GET') }}" class="w-full flex items-center gap-2">
                                 <i class="fas fa-search hud-icon pt-2"></i>
                                 <div class="flex-grow flex gap-2">
@@ -342,7 +350,10 @@
                 <div class="hud-section">
                     <div class="hud-section-title">Write Operations</div>
                     {% for tmpl in template %}
-                        <div class="hud-entry" data-filter-text="{{ tmpl.prompt | default('new') | lower }}">
+                        <div class="hud-entry"
+                             id="hud-opt-template-{{ loop.index }}"
+                             data-filter-text="{{ tmpl.prompt | default('new') | lower }}"
+                             role="option" aria-selected="false">
                             <form action="{{ tmpl.href }}" method="{{ tmpl.method }}" class="w-full">
                                 <div class="flex items-center mb-2">
                                     <i class="fas fa-pen hud-icon"></i>
@@ -439,6 +450,7 @@
     // 2. HUD Logic
     function openHud() {
         hud.classList.add('active');
+        hudInput.setAttribute('aria-expanded', 'true');
         hudInput.value = '';
         filterHud('');
         hudInput.focus();
@@ -448,6 +460,8 @@
 
     function closeHud() {
         hud.classList.remove('active');
+        hudInput.setAttribute('aria-expanded', 'false');
+        hudInput.removeAttribute('aria-activedescendant');
     }
 
     function filterHud(text) {
@@ -474,7 +488,10 @@
 
     function updateSelection() {
         const visible = Array.from(document.querySelectorAll('.hud-entry:not([style*="display: none"])'));
-        document.querySelectorAll('.hud-entry.selected').forEach(el => el.classList.remove('selected'));
+        document.querySelectorAll('.hud-entry.selected').forEach(el => {
+            el.classList.remove('selected');
+            el.setAttribute('aria-selected', 'false');
+        });
 
         if(visible.length > 0) {
             if(selectedIndex >= visible.length) selectedIndex = 0;
@@ -482,7 +499,15 @@
 
             const el = visible[selectedIndex];
             el.classList.add('selected');
+            el.setAttribute('aria-selected', 'true');
             el.scrollIntoView({block: "nearest"});
+
+            // Set aria-activedescendant
+            if (el.id) {
+                hudInput.setAttribute('aria-activedescendant', el.id);
+            }
+        } else {
+            hudInput.removeAttribute('aria-activedescendant');
         }
     }
 

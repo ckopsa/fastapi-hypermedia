@@ -1,0 +1,3 @@
+## 2025-05-15 - Hyper-WIMP Accessibility
+**Learning:** In highly customized, non-standard UI patterns like the "Hyper-WIMP" command palette where explicit `<label>` tags are omitted for aesthetic reasons, dynamically generated inputs (like in queries and templates) and icon-only buttons often lack accessible names, making them difficult to use with screen readers.
+**Action:** Always map template variables (like `data_item.prompt`) to the `aria-label` attribute on dynamically generated inputs and explicitly add `aria-label` to custom interactive elements (e.g., close buttons, filter inputs) to ensure accessibility without compromising the custom design.

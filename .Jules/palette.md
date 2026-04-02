@@ -1,0 +1,3 @@
+## 2024-03-04 - Screen Reader A11y in Custom UI Themes
+**Learning:** Custom UI themes, particularly highly stylized ones like "Hyper-WIMP", often drop explicit `<label>` elements in favor of placeholder text to achieve a minimalist look. This causes severe accessibility issues as screen readers lose the necessary context for interactive elements like text inputs and custom close buttons.
+**Action:** Always ensure that if visual `<label>` elements are intentionally omitted, an equivalent `aria-label` attribute is explicitly provided. For dynamic elements, use available template variables (like `data_item.prompt` or a default fallback) to populate the `aria-label`.

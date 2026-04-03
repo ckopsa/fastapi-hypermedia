@@ -1,0 +1,3 @@
+## 2024-05-18 - Accessibility in Custom UI Templates without Labels
+**Learning:** In command-palette or HUD-style interfaces (like "Hyper-WIMP") where explicit `<label>` elements are intentionally omitted for a cleaner visual design, screen readers lose the context of inputs.
+**Action:** When working with dynamically generated UI templates that omit visual labels, explicitly map template variables representing the name/description (e.g., `data_item.prompt` or `query.prompt`) to the `aria-label` attribute on `<input>` and `<textarea>` elements to ensure screen reader accessibility is maintained without compromising the visual aesthetic.

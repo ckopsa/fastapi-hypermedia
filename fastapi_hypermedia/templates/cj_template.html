@@ -9,9 +9,9 @@
      {% if data_item.render_hint == 'hidden' %}hidden{% endif %}
 >
     <label for="{{ id_prefix }}_{{ data_item.name }}" class="block mb-1 font-bold text-gray-200">{{ data_item.prompt |
-        default(data_item.name) }}:</label>
+        default(data_item.name) }}{% if data_item.required %}<span class="text-red-500 ml-1" aria-hidden="true" title="Required">*</span>{% endif %}:</label>
     {% if data_item.input_type == 'select' and data_item.options %}
-    <select id="{{ id_prefix }}_{{ data_item.name }}" name="{{ data_item.name }}" {% if data_item.required %}required{%
+    <select id="{{ id_prefix }}_{{ data_item.name }}" name="{{ data_item.name }}" {% if data_item.required %}required aria-required="true"{%
             endif %}
             class="w-full p-2 border border-gray-700 bg-gray-900 text-gray-200 rounded-md box-border text-base transition-colors duration-200 ease-in-out focus:border-purple-500 focus:ring-2 focus:ring-purple-500 focus:outline-none">
         {% for option_val in data_item.options %}
@@ -21,7 +21,7 @@
     </select>
     {% elif data_item.input_type == 'checkbox' %}
     <input type="checkbox" id="{{ id_prefix }}_{{ data_item.name }}" name="{{ data_item.name }}" {% if data_item.value
-           %}checked{% endif %} {% if data_item.required %}required{% endif %}
+           %}checked{% endif %} {% if data_item.required %}required aria-required="true"{% endif %}
            class="p-2 border border-gray-700 bg-gray-900 text-gray-200 rounded-md box-border text-base transition-colors duration-200 ease-in-out focus:border-purple-500 focus:ring-2 focus:ring-purple-500 focus:outline-none">
     {% elif data_item.input_type == 'number' %}
     <input type="number" id="{{ id_prefix }}_{{ data_item.name }}" name="{{ data_item.name }}"
@@ -29,7 +29,7 @@
            {% if data_item.minimum is not none %}min="{{ data_item.minimum }}" {% endif %}
            {% if data_item.maximum is not none %}max="{{ data_item.maximum }}" {% endif %}
            {% if data_item.pattern %}pattern="{{ data_item.pattern }}" {% endif %}
-           {% if data_item.required %}required{% endif %}
+           {% if data_item.required %}required aria-required="true"{% endif %}
            class="w-full p-2 border border-gray-700 bg-gray-900 text-gray-200 rounded-md box-border text-base transition-colors duration-200 ease-in-out focus:border-purple-500 focus:ring-2 focus:ring-purple-500 focus:outline-none">
     {% else %} {# Default to text input or other specified input_type, or textarea if render_hint suggests #}
     {% if data_item.render_hint == 'textarea' %}
@@ -37,7 +37,7 @@
               {% if data_item.pattern %}pattern="{{ data_item.pattern }}" {% endif %}
               {% if data_item.min_length is not none %}minlength="{{ data_item.min_length }}" {% endif %}
               {% if data_item.max_length is not none %}maxlength="{{ data_item.max_length }}" {% endif %}
-              {% if data_item.required %}required{% endif %}
+              {% if data_item.required %}required aria-required="true"{% endif %}
               class="w-full p-2 border border-gray-700 bg-gray-900 text-gray-200 rounded-md box-border text-base transition-colors duration-200 ease-in-out focus:border-purple-500 focus:ring-2 focus:ring-purple-500 focus:outline-none">{{ data_item.value | default('') }}</textarea>
     {% else %}
     {# Fallback to a standard text input if no other conditions are met #}
@@ -46,7 +46,7 @@
            {% if data_item.pattern %}pattern="{{ data_item.pattern }}" {% endif %}
            {% if data_item.min_length is not none %}minlength="{{ data_item.min_length }}" {% endif %}
            {% if data_item.max_length is not none %}maxlength="{{ data_item.max_length }}" {% endif %}
-           {% if data_item.required %}required{% endif %}
+           {% if data_item.required %}required aria-required="true"{% endif %}
            class="w-full p-2 border border-gray-700 bg-gray-900 text-gray-200 rounded-md box-border text-base transition-colors duration-200 ease-in-out focus:border-purple-500 focus:ring-2 focus:ring-purple-500 focus:outline-none">
     {% endif %}
     {% endif %}

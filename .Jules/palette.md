@@ -1,0 +1,3 @@
+## 2024-05-24 - Accessibility in Aesthetic Interfaces
+**Learning:** When designing highly stylized interfaces (like the Hyper-WIMP command palette) where traditional `<label>` elements are intentionally omitted for visual reasons, it is critical to use template variables (e.g., `data_item.prompt` or `data_item.name`) to dynamically generate `aria-label` attributes for inputs. Placeholder text is not a substitute for an accessible label.
+**Action:** Always ensure that custom HUDs, data grids, or form elements without explicit visible labels receive an `aria-label` attribute derived from the available data model.

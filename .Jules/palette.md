@@ -1,0 +1,3 @@
+## 2023-11-20 - Accessible Label-less Inputs
+**Learning:** In highly customized or futuristic UIs (like the Hyper-WIMP `future.html`) where explicit `<label>` elements are omitted for design aesthetics, inputs become inaccessible to screen readers.
+**Action:** When creating label-less forms, dynamically generated inputs must map template variables (like `data_item.prompt` or `data_item.name`) directly to the `aria-label` attribute on the input elements to ensure they maintain screen reader accessibility.

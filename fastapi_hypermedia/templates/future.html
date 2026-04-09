@@ -196,7 +196,7 @@
                         </div>
                         {% endif %}
                     </div>
-                    <button onclick="closeItem()" class="text-xs border border-red-900 text-red-500 px-3 py-1 hover:bg-red-900 hover:text-white transition">
+                    <button onclick="closeItem()" aria-label="CLOSE [ESC]" class="text-xs border border-red-900 text-red-500 px-3 py-1 hover:bg-red-900 hover:text-white transition">
                         CLOSE [ESC]
                     </button>
                 </div>
@@ -262,6 +262,7 @@
             <div class="flex items-center">
                 <i class="fas fa-terminal text-pink-500 mr-3"></i>
                 <input type="text" id="hud-filter-input"
+                       aria-label="Filter commands"
                        class="bg-transparent border-none w-full text-xl text-white font-mono focus:outline-none placeholder-gray-700 uppercase"
                        placeholder="Execute Command..." autocomplete="off">
             </div>

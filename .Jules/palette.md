@@ -1,0 +1,3 @@
+## 2024-05-18 - Input Fields Without Labels Need ARIA Attributes
+**Learning:** In highly customized UX designs (like the "Hyper-WIMP" `future.html` template) where explicit `<label>` elements are intentionally omitted for aesthetic reasons, dynamic form inputs must explicitly map their metadata (e.g., `data_item.prompt`) to the `aria-label` attribute. Without this, screen readers cannot identify the purpose of the input fields within generated forms (queries/templates).
+**Action:** Always verify that dynamically generated `<input>` and `<textarea>` elements in UI templates include an `aria-label` or `aria-labelledby` if a standard `<label>` element is not present.
